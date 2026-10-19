@@ -2,18 +2,16 @@ name: Build dive brief
 
 on:
   schedule:
-    # Times are UTC. Palau = UTC+9.
-    - cron: "30 20 * * *"   # 05:30 Palau
-    - cron: "45 21 * * *"   # 06:45 Palau (backup run before 08:00 departure)
-    - cron: "0 9 * * *"     # 18:00 Palau (evening preview for tomorrow)
+    # Times are UTC; Palau = UTC+9. Off-the-hour minutes avoid GitHub's busiest slots.
+    - cron: "17 20 * * *"   # 05:17 Palau
+    - cron: "41 21 * * *"   # 06:41 Palau (backup run before 08:00 departure)
+    - cron: "7 9 * * *"     # 18:07 Palau (evening preview for tomorrow)
   workflow_dispatch: {}
   push:
-    paths:
-      - "data/sites.json"
-      - "scripts/**"
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -33,17 +31,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Fetch last published brief (fallback if a source is down)
+        run: |
+          mkdir -p docs/data
+          curl -fsSL --retry 2 "https://lowis-wong.github.io/palau-dive-brief/data/brief.json" -o docs/data/brief.json \
+            || echo "no previous brief"
       - name: Build brief
         run: python scripts/build.py
-      - name: Commit updated data
-        run: |
-          git config user.name "dive-brief-bot"
-          git config user.email "dive-brief-bot@users.noreply.github.com"
-          git add docs/data/brief.json
-          if git diff --cached --quiet; then echo "no change"; exit 0; fi
-          git commit -m "Update brief $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') Palau"
-          git pull --rebase
-          git push
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

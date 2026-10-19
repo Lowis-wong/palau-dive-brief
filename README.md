@@ -7,7 +7,7 @@ A daily pre-dive brief for Palau that works offline on iPhone.
 - **Sea state**: Open-Meteo marine + forecast (waves, swell, wind, rain), 7 days.
 - **Official**: NWS Guam coastal waters forecast for Koror (zone PMZ161).
 
-GitHub Actions rebuilds `docs/data/brief.json` at 05:30, 06:45 and 18:00 Palau time and publishes `docs/` to GitHub Pages.
+GitHub Actions rebuilds `docs/data/brief.json` at about 05:17, 06:41 and 18:07 Palau time (and on every push) and publishes `docs/` to GitHub Pages. The brief is not committed; each run starts from the last published copy as a fallback.
 
 ## Use on iPhone
 Open the Pages link in Safari → Share → **Add to Home Screen**. Open it once with signal before the boat leaves; everything is then cached for offline use.

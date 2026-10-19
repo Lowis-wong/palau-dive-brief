@@ -304,7 +304,10 @@ def main() -> None:
     # Keep yesterday so a dive logged the morning after still finds its tide/weather context.
     start = date.fromisoformat(args.start) if args.start else now.date() - timedelta(days=1)
     end = start + timedelta(days=args.days - 1)
-    prev = json.loads(OUT.read_text()) if OUT.exists() else {}
+    try:
+        prev = json.loads(OUT.read_text()) if OUT.exists() else {}
+    except (ValueError, OSError):
+        prev = {}
     status = {}
 
     # tides
