@@ -100,7 +100,14 @@ function renderSummary() {
     const wind = Math.max(...wz.map((z) => z.wind_max_kn ?? 0));
     if (wind >= 18) flags.push(`Wind up to ${wind} kn: surface conditions and pick-ups harder.`);
   }
+  const conf = d.confidence;
+  const confText = { high: "High: spring tide, quiet sea", medium: "Medium", low: "Low: check on site before committing", unknown: "No weather data" };
+  const nwsH = (brief.nws?.headlines || []);
+  const nwsFresh = brief.nws && (Date.parse(d.date) - Date.parse(brief.nws.fetched_at.slice(0, 10))) / 864e5 <= 1;
+  const alerts = nwsFresh ? nwsH : [];
   $("#summary").innerHTML = `
+    ${alerts.map((h) => `<p class="alert">NWS: ${esc(h)}</p>`).join("")}`;
+  $("#summary").innerHTML += `
     <div class="stats">
       <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}</div>
         <div class="s num">range ${ts.max_range_m ?? "–"} m · ×${ts.ratio}</div></div>
@@ -110,6 +117,7 @@ function renderSummary() {
         <div class="s num">day ${d.moon.age_days} · ${Math.round(d.moon.illumination * 100)}%</div></div>
     </div>
     ${west ? `<p class="note num">West reef: wind ${west.wind_dir ?? ""} ${west.wind_max_kn ?? "–"} kn (gust ${west.gust_max_kn ?? "–"}) · swell ${west.swell_dir ?? ""} ${west.swell_max_m ?? "–"} m @ ${west.swell_period_s ?? "–"} s</p>` : ""}
+    ${conf ? `<p class="conf ${conf.level}"><b>Prediction confidence: ${esc(confText[conf.level] || conf.level)}</b>${conf.reasons.length ? `<br>${conf.reasons.map(esc).join("<br>")}` : ""}</p>` : ""}
     ${flags.length ? `<ul class="flags">${flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}`;
 }
 

@@ -166,3 +166,14 @@ input, select, textarea {
 .logitem button { background: none; border: 0; color: var(--muted); font-size: 18px; padding: 0 4px; }
 .foot { font-size: 12px; color: var(--muted); padding: 4px 4px 0; }
 .empty { color: var(--muted); font-size: 13px; }
+
+.alert { margin: 0 0 12px; padding: 9px 11px; border-radius: 10px; font-size: 14px; font-weight: 650;
+  background: #fde5e4; color: #7a1513; }
+.conf { margin: 12px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 13px; border: 1px solid var(--line); color: var(--text-2); }
+.conf b { color: var(--text); }
+.conf.low { border-color: #e34948; }
+.conf.medium { border-color: #eda100; }
+.conf.high { border-color: #1baf7a; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .alert { background: #4a1b1a; color: #ffc9c7; }
+}

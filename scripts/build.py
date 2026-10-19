@@ -116,6 +116,17 @@ def fetch_weather() -> dict:
     return {"zones": zones}
 
 
+def nws_headlines(text: str) -> list[str]:
+    """'...SMALL CRAFT ADVISORY IN EFFECT THROUGH TUESDAY AFTERNOON...' -> list of headlines."""
+    import re
+    out = []
+    for m in re.finditer(r"\.\.\.([A-Z][A-Z0-9 ,'/\-]{6,}?)\.\.\.", text):
+        h = " ".join(m.group(1).split()).capitalize()
+        if h not in out:
+            out.append(h)
+    return out
+
+
 def fetch_nws() -> str | None:
     raw = get("https://tgftp.nws.noaa.gov/data/raw/fz/fzpq52.pgum.cwf.pq2.txt").decode("utf-8", "replace")
     up = raw.upper()
@@ -160,6 +171,41 @@ def summarize_zone(z: dict, day: date) -> dict | None:
         "rain_prev24_mm": round(sum(rain), 1) if rain_idx else None,
         "sst_c": mx(m.get("sea_surface_temperature", []), idx_m),
     }
+
+
+# ----------------------------------------------------------------------------- confidence
+def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
+    """How far to trust the tide-only prediction today.
+
+    The tide drives channel flow through the lagoon/ocean level difference. Swell pumping
+    water over the reef crest, wind on the surface layer and rain runoff all change that
+    difference; they matter most when the tide itself is weak (neap)."""
+    ratio = day["tide_strength"]["ratio"]
+    reasons = []
+    if zones:
+        west = [z for z in zones if z["zone"].startswith("west")]
+        swell = max((z["swell_max_m"] or 0) for z in west) if west else 0
+        wave = max((z["wave_max_m"] or 0) for z in west) if west else 0
+        wind = max((z["wind_max_kn"] or 0) for z in zones)
+        rain = max((z["rain_prev24_mm"] or 0) for z in zones)
+        if wave >= 1.5 or swell >= 1.2:
+            reasons.append(f"Waves {wave} m / swell {swell} m on the west reef can pump water over the crest "
+                           "and out through the channels, weakening or reversing incoming flow.")
+        if wind >= 15:
+            reasons.append(f"Wind to {wind} kn drives the surface layer: surface and depth may flow differently.")
+        if rain >= 25:
+            reasons.append(f"{rain} mm rain in 24 h raises the lagoon: stronger, longer outgoing; murky ebb.")
+    if ratio <= 0.85 and reasons:
+        reasons.insert(0, "Neap tide: the tidal push is weak, so the factors below can win.")
+    if not zones:
+        level = "unknown"
+    elif ratio <= 0.85 and reasons:
+        level = "low"
+    elif reasons or ratio <= 0.85:
+        level = "medium"
+    else:
+        level = "high"
+    return {"level": level, "reasons": reasons}
 
 
 # ----------------------------------------------------------------------------- assemble
@@ -285,13 +331,17 @@ def main() -> None:
         try:
             txt = fetch_nws()
             if txt:
-                nws = {"fetched_at": now.strftime("%Y-%m-%d %H:%M"), "text": txt}
+                nws = {"fetched_at": now.strftime("%Y-%m-%d %H:%M"), "text": txt, "headlines": nws_headlines(txt)}
             status["nws"] = "ok" if txt else "zone not found"
         except Exception as ex:  # noqa: BLE001
             print("NWS FAILED:", ex)
             status["nws"] = f"stale: {ex}"
     elif (args.fixtures / "nws.txt").exists():
-        nws = {"fetched_at": now.strftime("%Y-%m-%d %H:%M"), "text": (args.fixtures / "nws.txt").read_text()}
+        t = (args.fixtures / "nws.txt").read_text()
+        nws = {"fetched_at": now.strftime("%Y-%m-%d %H:%M"), "text": t, "headlines": nws_headlines(t)}
+
+    for d in out_days:
+        d["confidence"] = assess_confidence(d, (weather or {}).get("days", {}).get(d["date"]))
 
     site_meta = [{k: s[k] for k in ("id", "name", "type", "exposure", "lag_min", "incoming", "outgoing",
                                      "slack", "hazards", "confidence", "n_logs")} for s in site_cfg]
