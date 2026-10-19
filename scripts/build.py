@@ -163,6 +163,8 @@ def summarize_zone(z: dict, day: date) -> dict | None:
         "zone": z["id"], "name": z["name"],
         "wave_max_m": mx(m.get("wave_height", []), idx_m),
         "swell_max_m": mx(m.get("swell_wave_height", []), idx_m),
+        "swell_dir_deg": at_peak(m.get("swell_wave_direction", []), m.get("swell_wave_height", []), idx_m),
+        "wind_dir_deg": at_peak(f.get("wind_direction_10m", []), f.get("wind_speed_10m", []), idx_f),
         "swell_dir": compass(at_peak(m.get("swell_wave_direction", []), m.get("swell_wave_height", []), idx_m)),
         "swell_period_s": at_peak(m.get("swell_wave_period", []), m.get("swell_wave_height", []), idx_m),
         "wind_max_kn": mx(f.get("wind_speed_10m", []), idx_f),
@@ -181,20 +183,25 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
     water over the reef crest, wind on the surface layer and rain runoff all change that
     difference; they matter most when the tide itself is weak (neap)."""
     ratio = day["tide_strength"]["ratio"]
-    reasons = []
+    reasons, factors = [], []
     if zones:
         west = [z for z in zones if z["zone"].startswith("west")]
         swell = max((z["swell_max_m"] or 0) for z in west) if west else 0
         wave = max((z["wave_max_m"] or 0) for z in west) if west else 0
-        wind = max((z["wind_max_kn"] or 0) for z in zones)
+        wind = max((z["wind_max_kn"] or 0) for z in west) if west else 0
         rain = max((z["rain_prev24_mm"] or 0) for z in zones)
         if wave >= 1.5 or swell >= 1.2:
+            factors.append(f"W swell {swell} m" if swell >= 1.2 else f"W waves {wave} m")
             reasons.append(f"Waves {wave} m / swell {swell} m on the west reef can pump water over the crest "
                            "and out through the channels, weakening or reversing incoming flow.")
         if wind >= 15:
+            factors.append(f"Wind {round(wind)} kn")
             reasons.append(f"Wind to {wind} kn drives the surface layer: surface and depth may flow differently.")
-        if rain >= 25:
+        if rain >= 20:
+            factors.append(f"Rain {round(rain)} mm/24h")
             reasons.append(f"{rain} mm rain in 24 h raises the lagoon: stronger, longer outgoing; murky ebb.")
+    if ratio <= 0.85:
+        factors.insert(0, "Neap")
     if ratio <= 0.85 and reasons:
         reasons.insert(0, "Neap tide: the tidal push is weak, so the factors below can win.")
     if not zones:
@@ -205,7 +212,7 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
         level = "medium"
     else:
         level = "high"
-    return {"level": level, "reasons": reasons}
+    return {"level": level, "factors": factors, "reasons": reasons}
 
 
 # ----------------------------------------------------------------------------- assemble

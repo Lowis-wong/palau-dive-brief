@@ -169,11 +169,32 @@ input, select, textarea {
 
 .alert { margin: 0 0 12px; padding: 9px 11px; border-radius: 10px; font-size: 14px; font-weight: 650;
   background: #fde5e4; color: #7a1513; }
-.conf { margin: 12px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 13px; border: 1px solid var(--line); color: var(--text-2); }
-.conf b { color: var(--text); }
-.conf.low { border-color: #e34948; }
-.conf.medium { border-color: #eda100; }
-.conf.high { border-color: #1baf7a; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .alert { background: #4a1b1a; color: #ffc9c7; }
+}
+
+.conds { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.cond { display: flex; align-items: center; gap: 10px; }
+.cond .k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.cond .cv { font-size: 20px; font-weight: 650; line-height: 1.15; }
+.cond .cv small { font-size: 13px; color: var(--muted); font-weight: 500; }
+.cond .s { font-size: 12px; color: var(--text-2); }
+.dial { width: 52px; height: 52px; flex: 0 0 52px; }
+.dial .ring { fill: none; stroke: var(--line); stroke-width: 2; }
+.dial .tick { stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
+.dial .n { font-size: 9px; font-weight: 700; fill: var(--muted); }
+.dial .shaft { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.dial .head { fill: var(--text); }
+.conf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 14px 0 0; padding: 8px 10px;
+  border-radius: 10px; border: 1.5px solid var(--line); font-size: 13px; }
+.conf-k { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+.conf-v { font-weight: 700; margin-right: 4px; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); color: var(--text-2); }
+.conf.low { border-color: #e34948; } .conf.low .conf-v { color: #c4302f; }
+.conf.medium { border-color: #eda100; } .conf.medium .conf-v { color: #9a6a00; }
+.conf.high { border-color: #1baf7a; } .conf.high .conf-v { color: #0f7d55; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .conf.low .conf-v { color: #ff8a88; }
+  :root:not([data-theme="light"]) .conf.medium .conf-v { color: #f3c45a; }
+  :root:not([data-theme="light"]) .conf.high .conf-v { color: #5fd4a4; }
 }

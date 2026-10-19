@@ -85,39 +85,64 @@ function meter(n) {
 function dayWeather(day) {
   return brief.weather?.days?.[day.date] || null;
 }
+const PTS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+const toDeg = (deg, name) => (deg != null ? deg : name ? PTS.indexOf(name) * 22.5 : null);
+
+/* Compass dial: arrow shows where the wind/swell is GOING; it enters from the side it comes FROM. */
+function dial(fromDeg, label) {
+  if (fromDeg == null) return "";
+  const rot = (fromDeg + 180) % 360;
+  return `<svg class="dial" viewBox="0 0 64 64" role="img" aria-label="${esc(label)}">
+    <circle cx="32" cy="32" r="27" class="ring"/>
+    ${[0, 90, 180, 270].map((a) => `<line class="tick" x1="32" y1="5" x2="32" y2="10" transform="rotate(${a} 32 32)"/>`).join("")}
+    <text x="32" y="17" class="n" text-anchor="middle">N</text>
+    <g transform="rotate(${rot} 32 32)">
+      <line x1="32" y1="52" x2="32" y2="18" class="shaft"/>
+      <path d="M32 12 L38.5 22 L32 19.5 L25.5 22 Z" class="head"/>
+    </g></svg>`;
+}
+
 function renderSummary() {
   const d = brief.days[dayIdx];
   const ts = d.tide_strength;
   const wz = dayWeather(d);
-  const west = wz?.find((z) => z.zone === "west-south") || wz?.[0];
+  const westZones = (wz || []).filter((z) => z.zone.startsWith("west"));
+  const pick = (k) => westZones.reduce((m, z) => ((z[k] ?? -1) > (m?.[k] ?? -1) ? z : m), null);
+  const windZ = pick("wind_max_kn"), swellZ = pick("swell_max_m");
+  const east = wz?.find((z) => z.zone === "east");
   const flags = [...d.flags];
-  if (wz) {
-    const rain = Math.max(...wz.map((z) => z.rain_prev24_mm ?? 0));
-    if (rain >= 20) flags.push(`${rain} mm rain in the last 24 h: outgoing water from the lagoon will be murkier than usual.`);
-    const east = wz.find((z) => z.zone === "east");
-    if (east?.wave_max_m >= 1.8) flags.push(`East side waves to ${east.wave_max_m} m: east reef exposed.`);
-    if (west?.wave_max_m >= 1.5) flags.push(`West side waves to ${west.wave_max_m} m: check conditions on the outer reef.`);
-    const wind = Math.max(...wz.map((z) => z.wind_max_kn ?? 0));
-    if (wind >= 18) flags.push(`Wind up to ${wind} kn: surface conditions and pick-ups harder.`);
-  }
-  const conf = d.confidence;
-  const confText = { high: "High: spring tide, quiet sea", medium: "Medium", low: "Low: check on site before committing", unknown: "No weather data" };
-  const nwsH = (brief.nws?.headlines || []);
+  if (east?.wave_max_m >= 1.8) flags.push(`East reef waves to ${east.wave_max_m} m.`);
+
+  // Only warnings stronger than the near-permanent small craft advisory.
   const nwsFresh = brief.nws && (Date.parse(d.date) - Date.parse(brief.nws.fetched_at.slice(0, 10))) / 864e5 <= 1;
-  const alerts = nwsFresh ? nwsH : [];
+  const alerts = nwsFresh ? (brief.nws.headlines || []).filter((h) => !/small craft advisory/i.test(h)) : [];
+
+  const conf = d.confidence;
+  const factors = conf?.factors || [];
+  const confRow = conf ? `<div class="conf ${conf.level}">
+      <span class="conf-k">Confidence</span><span class="conf-v">${esc(conf.level === "unknown" ? "No weather" : conf.level[0].toUpperCase() + conf.level.slice(1))}</span>
+      ${factors.map((f) => `<span class="chip">${esc(f)}</span>`).join("")}
+    </div>` : "";
+
+  const windBox = windZ ? `<div class="cond">${dial(toDeg(windZ.wind_dir_deg, windZ.wind_dir), `Wind from ${windZ.wind_dir}`)}
+      <div><div class="k">Wind · west</div><div class="cv num">${windZ.wind_max_kn ?? "–"}<small> kn</small></div>
+      <div class="s num">from ${esc(windZ.wind_dir ?? "–")} · gust ${windZ.gust_max_kn ?? "–"}</div></div></div>` : "";
+  const swellBox = swellZ ? `<div class="cond">${dial(toDeg(swellZ.swell_dir_deg, swellZ.swell_dir), `Swell from ${swellZ.swell_dir}`)}
+      <div><div class="k">Swell · west</div><div class="cv num">${swellZ.swell_max_m ?? "–"}<small> m</small></div>
+      <div class="s num">from ${esc(swellZ.swell_dir ?? "–")} · ${swellZ.swell_period_s != null ? Math.round(swellZ.swell_period_s) : "–"} s</div></div></div>` : "";
+
   $("#summary").innerHTML = `
-    ${alerts.map((h) => `<p class="alert">NWS: ${esc(h)}</p>`).join("")}`;
-  $("#summary").innerHTML += `
+    ${alerts.map((h) => `<p class="alert">NWS: ${esc(h)}</p>`).join("")}
     <div class="stats">
       <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}</div>
-        <div class="s num">range ${ts.max_range_m ?? "–"} m · ×${ts.ratio}</div></div>
+        <div class="s num">range ${ts.max_range_m ?? "–"} m</div></div>
       <div class="stat"><div class="k">Flow</div><div class="v num">${d.flow_level ?? "–"}<small style="font-size:13px;color:var(--muted)">/5</small>${meter(d.flow_level || 0)}</div>
         <div class="s">peak at Malakal</div></div>
       <div class="stat"><div class="k">Moon</div><div class="v" style="font-size:16px">${esc(d.moon.phase)}</div>
         <div class="s num">day ${d.moon.age_days} · ${Math.round(d.moon.illumination * 100)}%</div></div>
     </div>
-    ${west ? `<p class="note num">West reef: wind ${west.wind_dir ?? ""} ${west.wind_max_kn ?? "–"} kn (gust ${west.gust_max_kn ?? "–"}) · swell ${west.swell_dir ?? ""} ${west.swell_max_m ?? "–"} m @ ${west.swell_period_s ?? "–"} s</p>` : ""}
-    ${conf ? `<p class="conf ${conf.level}"><b>Prediction confidence: ${esc(confText[conf.level] || conf.level)}</b>${conf.reasons.length ? `<br>${conf.reasons.map(esc).join("<br>")}` : ""}</p>` : ""}
+    ${windBox || swellBox ? `<div class="conds">${windBox}${swellBox}</div>` : ""}
+    ${confRow}
     ${flags.length ? `<ul class="flags">${flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}`;
 }
 
