@@ -1,13 +1,18 @@
 {
   "_readme": "Site library. lag_min = minutes the site's current turn lags behind the Malakal high/low (positive = later). strength_factor scales Malakal flow rate to the site's felt strength. All values start as estimates and are calibrated from dive_log.csv. Coordinates are approximate and only used to pick the weather grid point.",
-  "reference_station": {"name": "Malakal Harbor", "noaa_id": "1841367"},
+  "reference_station": {
+    "name": "Malakal Harbor",
+    "noaa_id": "1841367"
+  },
   "sites": [
     {
       "id": "blue-corner",
       "name": "Blue Corner / Blue Holes",
       "type": "corner",
-      "lat": 7.135, "lon": 134.220,
+      "lat": 7.135,
+      "lon": 134.22,
       "exposure": "west outer reef",
+      "zone": "west-south",
       "lag_min": 0,
       "strength_factor": 1.0,
       "incoming": {
@@ -27,8 +32,10 @@
       "id": "siaes-corner",
       "name": "Siaes Corner",
       "type": "corner",
-      "lat": 7.312, "lon": 134.225,
+      "lat": 7.312,
+      "lon": 134.225,
       "exposure": "west outer reef",
+      "zone": "west-north",
       "lag_min": 20,
       "strength_factor": 1.0,
       "incoming": {
@@ -48,8 +55,10 @@
       "id": "ulong-channel",
       "name": "Ulong Channel",
       "type": "channel",
-      "lat": 7.299, "lon": 134.243,
+      "lat": 7.299,
+      "lon": 134.243,
       "exposure": "west outer reef / lagoon pass",
+      "zone": "west-north",
       "lag_min": 45,
       "strength_factor": 1.2,
       "incoming": {
@@ -69,8 +78,10 @@
       "id": "german-channel",
       "name": "German Channel",
       "type": "channel",
-      "lat": 7.163, "lon": 134.265,
+      "lat": 7.163,
+      "lon": 134.265,
       "exposure": "southwest outer reef / lagoon pass",
+      "zone": "west-south",
       "lag_min": 45,
       "strength_factor": 1.0,
       "incoming": {

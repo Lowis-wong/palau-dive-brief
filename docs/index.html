@@ -18,7 +18,7 @@
 <body>
 <header class="top">
   <div class="title-row">
-    <h1>Palau Dive Brief</h1>
+    <h1 id="title">Dive Brief</h1>
     <span id="net" class="net" hidden>Offline</span>
   </div>
   <p id="fresh" class="fresh">Loading…</p>
@@ -69,10 +69,10 @@
       </div>
       <fieldset><legend>Current I found</legend>
         <div class="seg" data-name="dir">
-          <button type="button" data-v="IN">In (to lagoon)</button>
-          <button type="button" data-v="OUT">Out (to ocean)</button>
-          <button type="button" data-v="SLACK">Slack</button>
-          <button type="button" data-v="MIXED">Turned / mixed</button>
+          <button type="button" class="c-in" data-v="IN">In (to lagoon)</button>
+          <button type="button" class="c-out" data-v="OUT">Out (to ocean)</button>
+          <button type="button" class="c-slack" data-v="SLACK">Slack</button>
+          <button type="button" class="c-mixed" data-v="MIXED">Turned / mixed</button>
         </div>
       </fieldset>
       <fieldset><legend>Strength</legend>
@@ -96,9 +96,13 @@
   </section>
 
   <footer class="foot">
-    Predictions from astronomical tides at Malakal Harbor shifted by per-site estimates. They are not observations:
-    always confirm current on site with the captain and guide.
-    Data: NOAA CO-OPS, Open-Meteo (DWD), NWS Guam.
+    <p>Predictions are astronomical tides at Malakal Harbor shifted by per-site estimates, plus model weather forecasts.
+    They are not observations and may be wrong, sometimes badly. Always confirm the current on site with the captain and guide.</p>
+    <p><b>Disclaimer.</b> For general planning information only. Not for navigation and not a substitute for local knowledge,
+    training or on-site assessment. Provided "as is" without warranty of any kind. Anyone using it does so at their own risk
+    and remains solely responsible for their own dive and boat decisions and their consequences.</p>
+    <p>Data: NOAA CO-OPS tide predictions; weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0, DWD models); NWS Guam.</p>
+    <p class="copy">© 2026 Lowis Wong. Palau Dive Brief is an original work by Lowis Wong. All rights reserved.</p>
   </footer>
 </main>
 

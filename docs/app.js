@@ -58,12 +58,11 @@ function renderAll() {
 }
 
 function renderFresh() {
-  const w = brief.weather;
+  const g = brief.generated_at; // "YYYY-MM-DD HH:MM"
   const last = brief.days[brief.days.length - 1].date;
-  $("#fresh").innerHTML =
-    `Built <b>${esc(brief.generated_at)}</b> (${ago(brief.generated_at)}) · ` +
-    (w ? `weather ${ago(w.generated_at)}` : "no weather") +
-    ` · tides to ${last.slice(5)}`;
+  $("#title").innerHTML = `<b class="num">${esc(g.slice(5, 10))} ${esc(g.slice(11, 16))}</b> <span>Brief</span>`;
+  $("#fresh").innerHTML = `Updated ${ago(g)} · tides to ${last.slice(8)}/${last.slice(5, 7)}` +
+    (brief.weather ? "" : " · no weather");
   const stale = Object.entries(brief.status || {}).filter(([, v]) => String(v).startsWith("stale"));
   if (stale.length) $("#fresh").innerHTML += ` · <b>${stale.map(([k]) => k).join(", ")} stale</b>`;
 }
@@ -81,6 +80,23 @@ function renderDays() {
 /* ---------------------------------------------------------------- summary */
 function meter(n) {
   return `<span class="meter" aria-hidden="true">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`;
+}
+/* Tide strength 1-5 from today's largest range relative to the 5-week mean (neap ... spring). */
+function tideLevel(ratio) {
+  return ratio < 0.7 ? 1 : ratio < 0.85 ? 2 : ratio < 1.15 ? 3 : ratio < 1.3 ? 4 : 5;
+}
+/* Moon as seen from Palau (northern tropics): waxing lit on the right. */
+function moonIcon(ageDays) {
+  const r = 14, c = 16;
+  const theta = (2 * Math.PI * ageDays) / 29.530588853;
+  const waxing = ageDays < 29.530588853 / 2;
+  const rx = Math.abs(Math.cos(theta)) * r;
+  const gibbous = Math.cos(theta) < 0; // more than half lit
+  const lit = `M${c} ${c - r} A${r} ${r} 0 0 1 ${c} ${c + r} A${rx.toFixed(2)} ${r} 0 0 ${gibbous ? 1 : 0} ${c} ${c - r} Z`;
+  return `<svg class="moon" viewBox="0 0 32 32" aria-hidden="true">
+    <circle cx="${c}" cy="${c}" r="${r}" class="moon-dark"/>
+    <path d="${lit}" class="moon-lit" ${waxing ? "" : `transform="translate(${2 * c} 0) scale(-1 1)"`}/>
+    <circle cx="${c}" cy="${c}" r="${r}" class="moon-ring"/></svg>`;
 }
 function dayWeather(day) {
   return brief.weather?.days?.[day.date] || null;
@@ -120,8 +136,8 @@ function renderSummary() {
   const conf = d.confidence;
   const factors = conf?.factors || [];
   const confRow = conf ? `<div class="conf ${conf.level}">
-      <span class="conf-k">Confidence</span><span class="conf-v">${esc(conf.level === "unknown" ? "No weather" : conf.level[0].toUpperCase() + conf.level.slice(1))}</span>
-      ${factors.map((f) => `<span class="chip">${esc(f)}</span>`).join("")}
+      <div class="conf-top"><span class="conf-k">Confidence</span><span class="conf-v">${esc(conf.level === "unknown" ? "No weather" : conf.level[0].toUpperCase() + conf.level.slice(1))}</span></div>
+      ${factors.length ? `<div class="chips">${factors.map((f) => `<span class="chip">${esc(f)}</span>`).join("")}</div>` : ""}
     </div>` : "";
 
   const windBox = windZ ? `<div class="cond">${dial(toDeg(windZ.wind_dir_deg, windZ.wind_dir), `Wind from ${windZ.wind_dir}`)}
@@ -134,11 +150,12 @@ function renderSummary() {
   $("#summary").innerHTML = `
     ${alerts.map((h) => `<p class="alert">NWS: ${esc(h)}</p>`).join("")}
     <div class="stats">
-      <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}</div>
+      <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}${meter(tideLevel(ts.ratio))}</div>
         <div class="s num">range ${ts.max_range_m ?? "–"} m</div></div>
       <div class="stat"><div class="k">Flow</div><div class="v num">${d.flow_level ?? "–"}<small style="font-size:13px;color:var(--muted)">/5</small>${meter(d.flow_level || 0)}</div>
         <div class="s">peak at Malakal</div></div>
-      <div class="stat"><div class="k">Moon</div><div class="v" style="font-size:16px">${esc(d.moon.phase)}</div>
+      <div class="stat"><div class="k">Moon</div>
+        <div class="moonrow">${moonIcon(d.moon.age_days)}<div class="v moon-name">${esc(d.moon.phase)}</div></div>
         <div class="s num">day ${d.moon.age_days} · ${Math.round(d.moon.illumination * 100)}%</div></div>
     </div>
     ${windBox || swellBox ? `<div class="conds">${windBox}${swellBox}</div>` : ""}
@@ -283,17 +300,64 @@ function renderLogSites() {
   const f = $("#logForm");
   if (!f.date.value) f.date.value = palauNow().date;
 }
-function predictedAt(siteId, date, time) {
-  const day = brief?.days.find((d) => d.date === date);
-  const sd = day?.sites.find((s) => s.id === siteId);
-  if (!sd || !time) return null;
-  const k = Math.round((tToMin(time) - 360) / 10);
-  const c = sd.states[k];
-  return c ? `${DIR_SHORT[DIR[c[0]]]} ${c.slice(1)}/5` : null;
+/* Freeze the conditions at the moment a dive is saved. The brief only holds yesterday onward,
+   so this is the only chance to keep the forecast that was in hand for that dive. */
+function snapshot(siteId, date, time) {
+  if (!brief || !date || !time) return null;
+  const day = brief.days.find((d) => d.date === date);
+  if (!day) return null;
+  const meta = brief.sites.find((s) => s.id === siteId);
+  const mins = tToMin(time);
+  const abs = (dt, hm) => Date.parse(`${dt}T${hm}:00+09:00`);
+  const t = abs(date, time);
+  const ctx = { v: 1, src: "forecast" };
+
+  // Malakal tide stage
+  const ext = brief.days.flatMap((d) => d.events.map((e) => ({ ...e, ts: abs(d.date, e.time) }))).sort((a, b) => a.ts - b.ts);
+  const i = ext.findIndex((e) => e.ts > t);
+  if (i > 0) {
+    const a = ext[i - 1], b = ext[i];
+    const k10 = Math.round(mins / 10);
+    const cv = day.curve_10min;
+    const rate = cv[k10 - 1] != null && cv[k10 + 1] != null ? Math.round(((cv[k10 + 1] - cv[k10 - 1]) / (20 / 60)) * 100) : null;
+    ctx.tide = {
+      stage: a.kind === "L" ? "incoming" : "outgoing",
+      since: `${a.kind} ${a.time}`, h_since: +((t - a.ts) / 3600e3).toFixed(1), h_to_next: +((b.ts - t) / 3600e3).toFixed(1),
+      range_m: +Math.abs(b.h - a.h).toFixed(2), ratio: day.tide_strength.ratio, label: day.tide_strength.label, rate_cm_h: rate,
+    };
+  }
+  // Prediction for this site with the parameters in force today
+  const sd = day.sites.find((s) => s.id === siteId);
+  const code = sd?.states[Math.round((mins - 360) / 10)];
+  if (code) ctx.pred = { dir: DIR_SHORT[DIR[code[0]]], level: +code.slice(1), lag_min: meta?.lag_min, factor: meta?.strength_factor };
+  // Weather at the entry hour for the site's zone
+  const zone = meta?.zone || "west-south";
+  const hr = brief.weather?.hourly?.[date]?.[zone]?.[Math.floor(mins / 60)];
+  if (hr) {
+    const f = brief.weather.hourly.fields;
+    ctx.wx = Object.fromEntries(f.map((k, j) => [k, hr[j]]));
+    ctx.wx.zone = zone;
+    ctx.wx.issued = brief.weather.generated_at;
+  }
+  const dz = dayWeather(day)?.find((z) => z.zone === zone);
+  if (dz) ctx.rain24_mm = dz.rain_prev24_mm;
+  if (day.confidence) ctx.conf = { level: day.confidence.level, factors: day.confidence.factors || [] };
+  return ctx;
 }
+const cmp = (deg) => (deg == null ? "?" : PTS[Math.round((deg % 360) / 22.5) % 16]);
 function logLine(l) {
   const name = brief?.sites.find((s) => s.id === l.site)?.name || l.site;
-  return `${l.date} ${l.time} | ${name} | found ${l.dir || "?"} str ${l.str ?? "?"} | vis ${l.vis || "?"} m | pred ${l.pred || "n/a"} | ${l.match || "-"}${l.notes ? " | " + l.notes : ""}`;
+  const p = l.ctx?.pred;
+  return `${l.date} ${l.time} | ${name} | found ${l.dir || "?"} str ${l.str ?? "?"} | vis ${l.vis || "?"} m | pred ${p ? `${p.dir} ${p.level}/5 (lag ${p.lag_min})` : l.pred || "n/a"} | ${l.match || "-"}${l.notes ? " | " + l.notes : ""}`;
+}
+function ctxLine(c) {
+  if (!c) return "   (no context saved: Claude to backfill)";
+  const parts = [];
+  if (c.tide) parts.push(`Malakal ${c.tide.stage} ${c.tide.h_since} h after ${c.tide.since}, ${c.tide.h_to_next} h to turn, range ${c.tide.range_m} m, ${c.tide.label} x${c.tide.ratio}, rate ${c.tide.rate_cm_h ?? "?"} cm/h`);
+  if (c.wx) parts.push(`${c.wx.zone} fcst ${c.wx.issued}: swell ${c.wx.swell_m ?? "?"} m ${cmp(c.wx.swell_dir)} ${c.wx.swell_s ?? "?"} s, waves ${c.wx.wave_m ?? "?"} m, wind ${cmp(c.wx.wind_dir)} ${c.wx.wind_kn ?? "?"} kn g${c.wx.gust_kn ?? "?"}`);
+  if (c.rain24_mm != null) parts.push(`rain24 ${c.rain24_mm} mm`);
+  if (c.conf) parts.push(`conf ${c.conf.level}${c.conf.factors.length ? ` (${c.conf.factors.join(", ")})` : ""}`);
+  return "   " + parts.join(" | ");
 }
 function renderLogs() {
   const logs = store.get(LOG_KEY, []);
@@ -302,7 +366,7 @@ function renderLogs() {
     <span><button class="ghost" id="copyLogs" type="button">Copy for Claude</button> <button class="ghost" id="clearLogs" type="button">Clear</button></span></div>` +
     logs.map((l, i) => `<div class="logitem"><span>${esc(logLine(l))}</span><button type="button" data-del="${i}" aria-label="Delete">×</button></div>`).join("");
   $("#copyLogs").onclick = async () => {
-    const txt = "Dive log feedback:\n" + logs.map(logLine).join("\n");
+    const txt = "Dive log feedback:\n" + logs.map((l) => `${logLine(l)}\n${ctxLine(l.ctx)}`).join("\n");
     try { await navigator.clipboard.writeText(txt); $("#copyLogs").textContent = "Copied ✓"; }
     catch { prompt("Copy this:", txt); }
   };
@@ -322,7 +386,7 @@ function initLogForm() {
     e.preventDefault();
     const l = { site: f.site.value, date: f.date.value, time: f.time.value, dir: picked.dir, str: picked.str,
       vis: f.vis.value, match: f.match.value, notes: f.notes.value.trim() };
-    l.pred = predictedAt(l.site, l.date, l.time);
+    l.ctx = snapshot(l.site, l.date, l.time);
     const ls = store.get(LOG_KEY, []); ls.push(l); store.set(LOG_KEY, ls);
     f.time.value = ""; f.vis.value = ""; f.notes.value = ""; f.match.value = "";
     f.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", "false"));

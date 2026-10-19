@@ -104,6 +104,7 @@ def fetch_weather() -> dict:
     for z in WEATHER_ZONES:
         mq = urllib.parse.urlencode({
             "latitude": z["lat"], "longitude": z["lon"], "timezone": "Pacific/Palau", "forecast_days": 7,
+            "past_days": 1,
             "hourly": "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,"
                       "swell_wave_period,wind_wave_height,sea_surface_temperature"})
         fq = urllib.parse.urlencode({
@@ -173,6 +174,36 @@ def summarize_zone(z: dict, day: date) -> dict | None:
         "rain_prev24_mm": round(sum(rain), 1) if rain_idx else None,
         "sst_c": mx(m.get("sea_surface_temperature", []), idx_m),
     }
+
+
+HOURLY_FIELDS = ["wind_kn", "wind_dir", "gust_kn", "swell_m", "swell_dir", "swell_s", "wave_m"]
+
+
+def hourly_table(zones: list[dict], days: list[date]) -> dict:
+    """{date: {zone: [[wind, wind_dir, gust, swell, swell_dir, swell_s, wave] x 24 h]}} for dive-log snapshots."""
+    out: dict = {"fields": HOURLY_FIELDS}
+    for z in zones:
+        m, f = z["marine"], z["forecast"]
+        mi = {t: i for i, t in enumerate(m["time"])}
+        fi = {t: i for i, t in enumerate(f["time"])}
+
+        def val(src, idx, key, t, nd=1):
+            i = idx.get(t)
+            arr = src.get(key) or []
+            v = arr[i] if i is not None and i < len(arr) else None
+            return None if v is None else round(v, nd)
+
+        for d in days:
+            rows = []
+            for h in range(24):
+                t = f"{d.isoformat()}T{h:02d}:00"
+                rows.append([val(f, fi, "wind_speed_10m", t), val(f, fi, "wind_direction_10m", t, 0),
+                             val(f, fi, "wind_gusts_10m", t), val(m, mi, "swell_wave_height", t, 2),
+                             val(m, mi, "swell_wave_direction", t, 0), val(m, mi, "swell_wave_period", t),
+                             val(m, mi, "wave_height", t, 2)])
+            if any(any(v is not None for v in r) for r in rows):
+                out.setdefault(d.isoformat(), {})[z["id"]] = rows
+    return out
 
 
 # ----------------------------------------------------------------------------- confidence
@@ -270,7 +301,8 @@ def main() -> None:
     args = ap.parse_args()
 
     now = now_palau()
-    start = date.fromisoformat(args.start) if args.start else now.date()
+    # Keep yesterday so a dive logged the morning after still finds its tide/weather context.
+    start = date.fromisoformat(args.start) if args.start else now.date() - timedelta(days=1)
     end = start + timedelta(days=args.days - 1)
     prev = json.loads(OUT.read_text()) if OUT.exists() else {}
     status = {}
@@ -326,11 +358,12 @@ def main() -> None:
             status["weather"] = f"stale: {ex}"
     if raw:
         wdays = {}
-        for d in days[:7]:
+        for d in days[:8]:
             zs = [s for s in (summarize_zone(z, d) for z in raw["zones"]) if s]
             if zs:
                 wdays[d.isoformat()] = zs
-        weather = {"generated_at": now.strftime("%Y-%m-%d %H:%M"), "days": wdays}
+        weather = {"generated_at": now.strftime("%Y-%m-%d %H:%M"), "days": wdays,
+                   "hourly": hourly_table(raw["zones"], days[:8])}
 
     # NWS coastal waters text
     nws = prev.get("nws")
@@ -350,7 +383,7 @@ def main() -> None:
     for d in out_days:
         d["confidence"] = assess_confidence(d, (weather or {}).get("days", {}).get(d["date"]))
 
-    site_meta = [{k: s[k] for k in ("id", "name", "type", "exposure", "lag_min", "incoming", "outgoing",
+    site_meta = [{k: s.get(k) for k in ("id", "name", "type", "exposure", "zone", "lag_min", "strength_factor", "incoming", "outgoing",
                                      "slack", "hazards", "confidence", "n_logs")} for s in site_cfg]
     brief = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": "Palau (UTC+9)",
