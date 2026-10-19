@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -38,6 +38,17 @@ jobs:
             || echo "no previous brief"
       - name: Build brief
         run: python scripts/build.py
+      - name: Mirror latest brief to the brief-data branch (single commit, for debugging)
+        continue-on-error: true
+        run: |
+          cp docs/data/brief.json "$RUNNER_TEMP/brief.json"
+          cd "$RUNNER_TEMP" && rm -rf mirror && mkdir mirror && cd mirror
+          git init -q -b brief-data
+          cp ../brief.json .
+          git add brief.json
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "Latest brief $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') Palau"
+          git push -f -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" brief-data
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
