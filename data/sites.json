@@ -1,0 +1,90 @@
+{
+  "_readme": "Site library. lag_min = minutes the site's current turn lags behind the Malakal high/low (positive = later). strength_factor scales Malakal flow rate to the site's felt strength. All values start as estimates and are calibrated from dive_log.csv. Coordinates are approximate and only used to pick the weather grid point.",
+  "reference_station": {"name": "Malakal Harbor", "noaa_id": "1841367"},
+  "sites": [
+    {
+      "id": "blue-corner",
+      "name": "Blue Corner / Blue Holes",
+      "type": "corner",
+      "lat": 7.135, "lon": 134.220,
+      "exposure": "west outer reef",
+      "lag_min": 0,
+      "strength_factor": 1.0,
+      "incoming": {
+        "entry": "Drop upstream of the corner (Blue Holes side is the usual combined entry), drift onto the plateau and hook in at 18-25 m.",
+        "notes": "Incoming usually gives the best shark action."
+      },
+      "outgoing": {
+        "entry": "Current reverses along the wall: drop on the opposite side of the plateau from the incoming entry and drift back onto it. Confirm with the guide/captain.",
+        "notes": "Outgoing often still diveable here; rays and jacks more likely."
+      },
+      "slack": "Quietest period; can enter from the plateau and explore slowly.",
+      "hazards": "Down-currents and current shifts mid-dive. Negative entry, reef hook, SMB.",
+      "confidence": "unverified",
+      "n_logs": 0
+    },
+    {
+      "id": "siaes-corner",
+      "name": "Siaes Corner",
+      "type": "corner",
+      "lat": 7.312, "lon": 134.225,
+      "exposure": "west outer reef",
+      "lag_min": 20,
+      "strength_factor": 1.0,
+      "incoming": {
+        "entry": "Start on the upcurrent side of the corner and drift to the point; hook in on the plateau edge at 10-18 m.",
+        "notes": "Incoming: strongest current, best visibility, grey reef shark schools."
+      },
+      "outgoing": {
+        "entry": "Start on the other side of the corner (current reversed) and drift to the point.",
+        "notes": "Outgoing: visibility drops."
+      },
+      "slack": "Easy wall dive; less action at the corner.",
+      "hazards": "Fire coral and hydroids on the reef top. Flow on top can differ from flow on the wall.",
+      "confidence": "unverified",
+      "n_logs": 0
+    },
+    {
+      "id": "ulong-channel",
+      "name": "Ulong Channel",
+      "type": "channel",
+      "lat": 7.299, "lon": 134.243,
+      "exposure": "west outer reef / lagoon pass",
+      "lag_min": 45,
+      "strength_factor": 1.2,
+      "incoming": {
+        "entry": "Enter at the outer channel mouth (~20 m), hook in at the sandy run-off to watch sharks, then unhook and drift into the channel toward the lagoon.",
+        "notes": "Classic Ulong dive. Clear ocean water."
+      },
+      "outgoing": {
+        "entry": "Not the classic dive: lagoon water drains out and pushes divers toward open water. Usually choose another site or a sheltered option.",
+        "notes": "Poor visibility; offshore drift risk."
+      },
+      "slack": "Current may reverse mid-dive near the turn. If it reverses, turn and go with it.",
+      "hazards": "Strong, changing currents. Titan triggerfish nests in season.",
+      "confidence": "unverified",
+      "n_logs": 0
+    },
+    {
+      "id": "german-channel",
+      "name": "German Channel",
+      "type": "channel",
+      "lat": 7.163, "lon": 134.265,
+      "exposure": "southwest outer reef / lagoon pass",
+      "lag_min": 45,
+      "strength_factor": 1.0,
+      "incoming": {
+        "entry": "Start at the southern (outer) mooring and drift into the channel toward the lagoon, past the manta cleaning station at 18-20 m. Finish at the northern mooring.",
+        "notes": "Incoming: 20-40 m visibility, mantas often inside the shallow channel."
+      },
+      "outgoing": {
+        "entry": "Outgoing pushes toward the ocean with murky lagoon water. Stay near the cleaning station on the outer mouth, or dive another site.",
+        "notes": "Outgoing: 10-20 m visibility."
+      },
+      "slack": "Good for waiting at the cleaning station.",
+      "hazards": "Boat traffic in the channel; shallow, fast water inside.",
+      "confidence": "unverified",
+      "n_logs": 0
+    }
+  ]
+}

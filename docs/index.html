@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palau Dive Brief</title>
+<meta name="description" content="Daily tide, current and sea-state brief for Palau dive sites. Works offline.">
+<meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dive Brief">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="title-row">
+    <h1>Palau Dive Brief</h1>
+    <span id="net" class="net" hidden>Offline</span>
+  </div>
+  <p id="fresh" class="fresh">Loading…</p>
+  <nav id="days" class="days" aria-label="Choose day"></nav>
+</header>
+
+<main id="app">
+  <section class="card" id="summary"></section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Tide · Malakal</h2>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw in"></i>Incoming</span>
+        <span><i class="sw out"></i>Outgoing</span>
+        <span><i class="sw slack"></i>Slack</span>
+      </div>
+    </div>
+    <div id="chart" class="chart"></div>
+    <p id="events" class="events"></p>
+  </section>
+
+  <section class="card" id="planner">
+    <div class="card-head">
+      <h2>Sites at <output id="planTime">08:30</output></h2>
+    </div>
+    <input id="plan" type="range" min="0" max="72" step="1" value="15" aria-label="Planned entry time">
+    <div class="scale" aria-hidden="true"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span></div>
+    <div id="sites"></div>
+  </section>
+
+  <section class="card" id="weather"></section>
+
+  <section class="card" id="nwsCard" hidden>
+    <details>
+      <summary><h2>NWS coastal waters · Koror</h2></summary>
+      <pre id="nws"></pre>
+    </details>
+  </section>
+
+  <section class="card" id="log">
+    <div class="card-head"><h2>Log a dive</h2></div>
+    <form id="logForm" autocomplete="off">
+      <label>Site<select name="site" required></select></label>
+      <div class="two">
+        <label>Date<input type="date" name="date" required></label>
+        <label>Entry<input type="time" name="time" required></label>
+      </div>
+      <fieldset><legend>Current I found</legend>
+        <div class="seg" data-name="dir">
+          <button type="button" data-v="IN">In (to lagoon)</button>
+          <button type="button" data-v="OUT">Out (to ocean)</button>
+          <button type="button" data-v="SLACK">Slack</button>
+          <button type="button" data-v="MIXED">Turned / mixed</button>
+        </div>
+      </fieldset>
+      <fieldset><legend>Strength</legend>
+        <div class="seg" data-name="str">
+          <button type="button" data-v="0">0 none</button>
+          <button type="button" data-v="1">1 mild</button>
+          <button type="button" data-v="2">2 strong</button>
+          <button type="button" data-v="3">3 ripping</button>
+        </div>
+      </fieldset>
+      <div class="two">
+        <label>Visibility (m)<input type="number" name="vis" inputmode="numeric" min="0" max="60"></label>
+        <label>Prediction
+          <select name="match"><option value="">—</option><option>matched</option><option>partly</option><option>wrong</option></select>
+        </label>
+      </div>
+      <label>Notes<textarea name="notes" rows="2" placeholder="Where you dropped, where current came from, when it turned…"></textarea></label>
+      <button class="primary" type="submit">Save log</button>
+    </form>
+    <div id="logList"></div>
+  </section>
+
+  <footer class="foot">
+    Predictions from astronomical tides at Malakal Harbor shifted by per-site estimates. They are not observations:
+    always confirm current on site with the captain and guide.
+    Data: NOAA CO-OPS, Open-Meteo (DWD), NWS Guam.
+  </footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

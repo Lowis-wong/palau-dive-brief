@@ -1,0 +1,52 @@
+name: Build dive brief
+
+on:
+  schedule:
+    # Times are UTC. Palau = UTC+9.
+    - cron: "30 20 * * *"   # 05:30 Palau
+    - cron: "45 21 * * *"   # 06:45 Palau (backup run before 08:00 departure)
+    - cron: "0 9 * * *"     # 18:00 Palau (evening preview for tomorrow)
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "data/sites.json"
+      - "scripts/**"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build-brief
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build brief
+        run: python scripts/build.py
+      - name: Commit updated data
+        run: |
+          git config user.name "dive-brief-bot"
+          git config user.email "dive-brief-bot@users.noreply.github.com"
+          git add docs/data/brief.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "Update brief $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') Palau"
+          git pull --rebase
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deploy
+        uses: actions/deploy-pages@v4
