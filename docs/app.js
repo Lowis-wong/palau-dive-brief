@@ -101,6 +101,13 @@ function moonIcon(ageDays) {
 function dayWeather(day) {
   return brief.weather?.days?.[day.date] || null;
 }
+const fmt0 = (v) => (v == null ? "–" : Math.round(v));
+/* Small arrow pointing where the wind/swell is going (from + 180). */
+function arrow(fromDeg) {
+  if (fromDeg == null) return "";
+  return `<svg class="arr" viewBox="0 0 16 16" aria-hidden="true"><g transform="rotate(${(fromDeg + 180) % 360} 8 8)">
+    <line x1="8" y1="14" x2="8" y2="4"/><path d="M8 1.5 L11.5 6.5 L8 5.2 L4.5 6.5 Z"/></g></svg>`;
+}
 const PTS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const toDeg = (deg, name) => (deg != null ? deg : name ? PTS.indexOf(name) * 22.5 : null);
 
@@ -136,15 +143,17 @@ function renderSummary() {
   const conf = d.confidence;
   const factors = conf?.factors || [];
   const confRow = conf ? `<div class="conf ${conf.level}">
-      <div class="conf-top"><span class="conf-k">Confidence</span><span class="conf-v">${esc(conf.level === "unknown" ? "No weather" : conf.level[0].toUpperCase() + conf.level.slice(1))}</span></div>
+      <div class="conf-top"><span class="conf-k">Confidence</span>
+        ${conf.score != null ? `<span class="conf-score num"><b>${conf.score}</b>/10</span>` : ""}
+        <span class="conf-v">${esc(conf.level === "unknown" ? "tide only" : conf.level[0].toUpperCase() + conf.level.slice(1))}</span></div>
       ${factors.length ? `<div class="chips">${factors.map((f) => `<span class="chip">${esc(f)}</span>`).join("")}</div>` : ""}
     </div>` : "";
 
   const windBox = windZ ? `<div class="cond">${dial(toDeg(windZ.wind_dir_deg, windZ.wind_dir), `Wind from ${windZ.wind_dir}`)}
-      <div><div class="k">Wind · west</div><div class="cv num">${windZ.wind_max_kn ?? "–"}<small> kn</small></div>
-      <div class="s num">from ${esc(windZ.wind_dir ?? "–")} · gust ${windZ.gust_max_kn ?? "–"}</div></div></div>` : "";
+      <div><div class="k">Wind</div><div class="cv num">${fmt0(windZ.wind_max_kn)}<span class="gust">/${fmt0(windZ.gust_max_kn)}</span><small> kn</small></div>
+      <div class="s num">from ${esc(windZ.wind_dir ?? "–")}</div></div></div>` : "";
   const swellBox = swellZ ? `<div class="cond">${dial(toDeg(swellZ.swell_dir_deg, swellZ.swell_dir), `Swell from ${swellZ.swell_dir}`)}
-      <div><div class="k">Swell · west</div><div class="cv num">${swellZ.swell_max_m ?? "–"}<small> m</small></div>
+      <div><div class="k">Swell</div><div class="cv num">${swellZ.swell_max_m ?? "–"}<small> m</small></div>
       <div class="s num">from ${esc(swellZ.swell_dir ?? "–")} · ${swellZ.swell_period_s != null ? Math.round(swellZ.swell_period_s) : "–"} s</div></div></div>` : "";
 
   $("#summary").innerHTML = `
@@ -166,7 +175,7 @@ function renderSummary() {
 /* ---------------------------------------------------------------- chart */
 function renderChart() {
   const d = brief.days[dayIdx];
-  const W = 360, H = 180, L = 30, R = 8, T = 22, B = 22;
+  const W = 360, H = 190, L = 30, R = 8, T = 30, B = 22;
   const k0 = 36, k1 = 108; // 06:00 .. 18:00 in 10-min steps
   const pts = d.curve_10min.slice(k0, k1 + 1);
   const vals = pts.filter((v) => v != null);
@@ -186,22 +195,24 @@ function renderChart() {
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
     s += `<line class="gridline" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><g class="axis"><text x="${L - 4}" y="${y(v) + 3}" text-anchor="end">${v.toFixed(step < 0.5 ? 2 : 1)}</text></g>`;
   }
-  for (let h = 6; h <= 18; h += 3) s += `<g class="axis"><text x="${x(h * 60)}" y="${H - 6}" text-anchor="middle">${String(h).padStart(2, "0")}</text></g>`;
-  s += `<line id="planLine" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--text)" stroke-width="2" opacity=".55"/>`;
+  for (let h = 6; h <= 18; h += 1) s += `<line class="hourtick" x1="${x(h * 60)}" x2="${x(h * 60)}" y1="${H - B}" y2="${H - B + 3}"/><g class="axis"><text x="${x(h * 60)}" y="${H - 6}" text-anchor="middle">${String(h).padStart(2, "0")}</text></g>`;
+  // planned entry time (moves with the slider and when the chart is tapped)
+  s += `<line id="planLine" x1="0" x2="0" y1="${T}" y2="${H - B}" class="planline"/>
+    <g id="planTag"><rect x="-19" y="${T - 17}" width="38" height="14" rx="7" class="plantag"/><text x="0" y="${T - 6.5}" text-anchor="middle" class="plantext"></text></g>`;
   const path = pts.map((v, i) => (v == null ? "" : `${i === 0 ? "M" : "L"}${x(360 + i * 10).toFixed(1)},${y(v).toFixed(1)}`)).join("");
   s += `<path class="curve" d="${path}"/>`;
-  for (const e of d.events) {
+  const marks = extremesMarked(d);
+  for (const e of marks) {
     const m = tToMin(e.time);
     if (m < 360 || m > 1080) continue;
     const ex = x(m), ey = y(e.h);
-    s += `<circle class="ext" cx="${ex}" cy="${ey}" r="4"/><text class="extlabel" x="${Math.min(Math.max(ex, L + 24), W - R - 24)}" y="${e.kind === "H" ? ey - 9 : ey + 15}" text-anchor="middle">${e.kind} ${e.time} · ${e.h.toFixed(2)}</text>`;
+    s += `<circle class="ext${e.tag ? " extreme" : ""}" cx="${ex}" cy="${ey}" r="4"/><text class="extlabel" x="${Math.min(Math.max(ex, L + 20), W - R - 20)}" y="${e.kind === "H" ? ey - 9 : ey + 15}" text-anchor="middle">${e.time} · ${e.h.toFixed(2)}</text>`;
   }
-  const now = palauNow();
-  if (now.date === d.date && now.mins >= 360 && now.mins <= 1080) s += `<line class="now" x1="${x(now.mins)}" x2="${x(now.mins)}" y1="${T}" y2="${H - B}"/>`;
   s += `<line id="cross" class="cross" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/>`;
   s += `<rect id="hit" x="${L}" y="0" width="${pw}" height="${H}" fill="transparent"/></svg><div id="tip" class="tip" hidden></div>`;
   $("#chart").innerHTML = s;
   movePlanLine();
+  renderEvents(marks);
 
   const svg = $("#chart svg"), hit = $("#hit"), cross = $("#cross"), tip = $("#tip");
   const show = (ev) => {
@@ -232,14 +243,32 @@ function movePlanLine() {
   const W = 360, L = 30, R = 8;
   const px = L + (planK / 72) * (W - L - R);
   l.setAttribute("x1", px); l.setAttribute("x2", px);
+  const tag = $("#planTag");
+  tag.setAttribute("transform", `translate(${Math.min(Math.max(px, L + 19), W - R - 19)} 0)`);
+  tag.querySelector("text").textContent = kToTime(planK);
+}
+/* Mixed semidiurnal tide: flag the higher high (HH) and lower low (LL) of the day. */
+function extremesMarked(d) {
+  const ev = d.events.map((e) => ({ ...e }));
+  const hs = ev.filter((e) => e.kind === "H"), ls = ev.filter((e) => e.kind === "L");
+  if (hs.length > 1) hs.reduce((a, b) => (b.h > a.h ? b : a)).tag = "HH";
+  if (ls.length > 1) ls.reduce((a, b) => (b.h < a.h ? b : a)).tag = "LL";
+  return ev;
+}
+function renderEvents(marks) {
+  const row = (kind, label) => {
+    const es = marks.filter((e) => e.kind === kind);
+    if (!es.length) return "";
+    return `<div class="hl"><span class="hl-k">${label}</span>${es.map((e) =>
+      `<span class="hl-e${e.tag ? " tagged" : ""}"><span class="num">${e.time}</span> <span class="num hl-h">${e.h.toFixed(2)} m</span>${e.tag ? `<i class="tag ${e.tag}">${e.tag}</i>` : ""}</span>`).join("")}</div>`;
+  };
+  $("#events").innerHTML = row("H", "High") + row("L", "Low");
 }
 
 /* ---------------------------------------------------------------- sites */
 function renderSites() {
   const d = brief.days[dayIdx];
   $("#planTime").textContent = kToTime(planK);
-  const ev = d.events.map((e) => `<b>${e.kind === "H" ? "High" : "Low"}</b> ${e.time} (${e.h.toFixed(2)} m)`).join(" · ");
-  $("#events").innerHTML = ev;
   $("#sites").innerHTML = brief.sites.map((meta) => {
     const sd = d.sites.find((x) => x.id === meta.id);
     if (!sd) return "";
@@ -259,12 +288,12 @@ function renderSites() {
       <div class="site-head"><span class="site-name">${esc(meta.name)}</span>
         ${dir ? `<span class="pill ${dir}">${DIR_SHORT[dir]} · ${lvl}/5</span>` : ""}</div>
       <div class="bar">${bar}<i class="mark" style="left:calc(${markLeft}% - 1px)"></i></div>
-      <div class="bar-lab"><span>06</span><span>12</span><span>18</span></div>
+      <div class="bar-ticks" aria-hidden="true">${Array.from({ length: 13 }, (_, i) => `<i style="left:${(i / 12) * 100}%"></i>`).join("")}</div>
+      <div class="bar-lab">${[6, 9, 12, 15, 18].map((h) => `<span style="left:${((h - 6) / 12) * 100}%">${String(h).padStart(2, "0")}</span>`).join("")}</div>
       <p class="best">${best}</p>
+      <p class="badges"><span class="badge">lag ${meta.lag_min >= 0 ? "+" : ""}${meta.lag_min} min</span><span class="badge">${conf}</span></p>
       ${advice ? `<p class="entry">${esc(advice.entry)}</p>` : ""}
-      ${stageNote ? `<p class="meta">${esc(stageNote)}</p>` : ""}
-      <p class="meta"><span class="badge">lag ${meta.lag_min >= 0 ? "+" : ""}${meta.lag_min} min</span> <span class="badge">${conf}</span></p>
-      <p class="meta">${esc(meta.hazards)}</p>
+      <div class="notes">${stageNote ? `<p>${esc(stageNote)}</p>` : ""}<p>${esc(meta.hazards)}</p></div>
     </article>`;
   }).join("");
 }
@@ -278,13 +307,13 @@ function renderWeather() {
     return;
   }
   const rows = wz.map((z) => `<tr><td>${esc(z.name)}</td>
-    <td class="num">${z.wind_dir ?? ""} ${z.wind_max_kn ?? "–"}<br><small>g${z.gust_max_kn ?? "–"}</small></td>
-    <td class="num">${z.swell_dir ?? ""} ${z.swell_max_m ?? "–"}<br><small>${z.swell_period_s ?? "–"} s</small></td>
-    <td class="num">${z.wave_max_m ?? "–"}</td></tr>`).join("");
+    <td class="num"><span class="wx">${arrow(toDeg(z.wind_dir_deg, z.wind_dir))}${fmt0(z.wind_max_kn)}<span class="gust">/${fmt0(z.gust_max_kn)}</span></span><small>${esc(z.wind_dir ?? "")}</small></td>
+    <td class="num"><span class="wx">${arrow(toDeg(z.swell_dir_deg, z.swell_dir))}${z.swell_max_m ?? "–"}</span><small>${esc(z.swell_dir ?? "")} · ${z.swell_period_s != null ? Math.round(z.swell_period_s) : "–"} s</small></td>
+    <td class="num"><span class="wx">${z.wave_max_m ?? "–"}</span></td></tr>`).join("");
   const rain = wz[0]?.rain_prev24_mm;
   $("#weather").innerHTML = `<div class="card-head"><h2>Sea state · 06–18 max</h2></div>
-    <table><thead><tr><th>Area</th><th>Wind kn</th><th>Swell m</th><th>Waves m</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="note">Model forecast (Open-Meteo / DWD), updated ${esc(brief.weather.generated_at)}. ${rain != null ? `Rain previous 24 h: ${rain} mm.` : ""} Ocean-current model is too coarse for channels, so it is not used.</p>`;
+    <table class="wxt"><thead><tr><th>Area</th><th>Wind</th><th>Swell</th><th>Waves</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="note">Wind kn (mean/gust), swell and waves m; arrows point where it is going. Model forecast (Open-Meteo / DWD), updated ${esc(brief.weather.generated_at)}. ${rain != null ? `Rain previous 24 h: ${rain} mm.` : ""} Ocean-current model is too coarse for channels, so it is not used.</p>`;
 }
 function renderNWS() {
   const n = brief.nws;

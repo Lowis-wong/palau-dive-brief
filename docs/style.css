@@ -231,3 +231,45 @@ input, select, textarea {
 .seg button.c-slack[aria-pressed="true"] { background: var(--slack); border-color: var(--slack); color: var(--text); }
 .seg button.c-mixed[aria-pressed="true"] { background: linear-gradient(90deg, var(--in) 0 50%, var(--out) 50% 100%); border-color: transparent; color: #fff; }
 .seg button { font-weight: 600; }
+
+/* round 3 */
+.gust { font-size: .62em; font-weight: 500; color: var(--muted); margin-left: 1px; }
+.conf-score { font-size: 13px; color: var(--muted); }
+.conf-score b { font-size: 18px; color: var(--text); font-weight: 750; }
+.chart .hourtick { stroke: var(--muted); stroke-width: 1; }
+.chart .planline { stroke: var(--text); stroke-width: 1.5; }
+.chart .plantag { fill: var(--text); }
+.chart .plantext { fill: var(--card); font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chart .ext.extreme { fill: var(--curve); }
+.events { display: grid; gap: 4px; margin-top: 10px; }
+.hl { display: flex; align-items: baseline; gap: 14px; font-size: 13px; color: var(--text-2); }
+.hl-k { width: 34px; flex: 0 0 34px; font-weight: 700; color: var(--text); }
+.hl-e { display: inline-flex; align-items: baseline; gap: 5px; min-width: 112px; }
+.hl-h { color: var(--muted); }
+.hl-e.tagged .num { color: var(--text); font-weight: 650; }
+.tag { font-style: normal; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 5px; letter-spacing: .03em; }
+.tag.HH { background: var(--in-soft); color: var(--in); }
+.tag.LL { background: var(--out-soft); color: var(--out); }
+.scale { font-variant-numeric: tabular-nums; }
+.bar-ticks { position: relative; height: 4px; margin: 1px 0 0; }
+.bar-ticks i { position: absolute; top: 0; width: 1px; height: 4px; background: var(--muted); opacity: .6; transform: translateX(-.5px); }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0; }
+.notes { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--bg); }
+.notes p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.notes p + p { margin-top: 4px; }
+.arr { width: 14px; height: 14px; flex: 0 0 14px; margin-right: 3px; vertical-align: -2px; }
+.arr line { stroke: var(--text); stroke-width: 1.8; stroke-linecap: round; }
+.arr path { fill: var(--text); }
+.wxt td small { display: block; font-size: 11px; color: var(--muted); }
+.wx { display: inline-flex; align-items: center; font-weight: 600; white-space: nowrap; }
+
+/* round 3b: aligned scales, event grid, compact chips */
+.scale { position: relative; display: block; height: 14px; margin: 0 11px 8px; }
+.scale span { position: absolute; top: 0; transform: translateX(-50%); }
+.bar-lab { position: relative; display: block; height: 13px; }
+.bar-lab span { position: absolute; top: 0; transform: translateX(-50%); }
+.bar-lab span:first-child { transform: none; }
+.bar-lab span:last-child { transform: translateX(-100%); }
+.hl { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: baseline; }
+.hl-e { min-width: 0; }
+.chip { font-size: 11.5px; padding: 2px 7px; }
