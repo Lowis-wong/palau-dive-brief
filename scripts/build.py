@@ -221,14 +221,16 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
     Level: 8-10 high, 5-7 medium, 1-4 low."""
     ratio = day["tide_strength"]["ratio"]
     factors: list[str] = []
+    breakdown: dict[str, int] = {}
     score = 10
     tide_pen = 3 if ratio < 0.7 else 2 if ratio < 0.85 else 1 if ratio < 1.15 else 0
     if tide_pen:
         label = "Neap" if ratio < 0.85 else "Mid tide"
-        factors.append(f"{label} \u2212{tide_pen}")
+        factors.append(label)
+        breakdown["tide"] = -tide_pen
         score -= tide_pen
     if not zones:
-        return {"score": max(1, score), "level": "unknown", "factors": factors + ["no weather"], "tide_only": True}
+        return {"score": max(1, score), "level": "unknown", "factors": factors + ["no weather"], "breakdown": breakdown, "tide_only": True}
     west = [z for z in zones if z["zone"].startswith("west")]
     swell = max((z["swell_max_m"] or 0) for z in west) if west else 0
     wave = max((z["wave_max_m"] or 0) for z in west) if west else 0
@@ -239,19 +241,22 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
         what = f"Swell {swell} m" if swell >= {3: 1.6, 2: 1.2, 1: 0.8}[sw_pen] else f"Waves {wave} m"
         if ratio < 0.85:
             sw_pen += 1  # a weak tide is easier for swell pumping to overpower
-        factors.append(f"{what} \u2212{sw_pen}")
+        factors.append(what)
+        breakdown["swell"] = -sw_pen
         score -= sw_pen
     wd_pen = 2 if wind >= 20 else 1 if wind >= 15 else 0
     if wd_pen:
-        factors.append(f"Wind {round(wind)} kn \u2212{wd_pen}")
+        factors.append(f"Wind {round(wind)} kn")
+        breakdown["wind"] = -wd_pen
         score -= wd_pen
     rn_pen = 2 if rain >= 40 else 1 if rain >= 20 else 0
     if rn_pen:
-        factors.append(f"Rain {round(rain)} mm \u2212{rn_pen}")
+        factors.append(f"Rain {round(rain)} mm")
+        breakdown["rain"] = -rn_pen
         score -= rn_pen
     score = max(1, min(10, score))
     level = "high" if score >= 8 else "medium" if score >= 5 else "low"
-    return {"score": score, "level": level, "factors": factors}
+    return {"score": score, "level": level, "factors": factors, "breakdown": breakdown}
 
 
 # ----------------------------------------------------------------------------- assemble
