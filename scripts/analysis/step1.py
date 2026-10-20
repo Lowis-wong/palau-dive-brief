@@ -199,17 +199,18 @@ def fetch_ioc(days: int = 120) -> pd.DataFrame | None:
 
 
 def ioc_hourly(wide: pd.DataFrame) -> pd.DataFrame:
-    """Robust hourly value per sensor: median of 1-min samples, with spike removal, needs >= 40 samples."""
+    """Hourly value on the hour (UHSLC convention): 21-minute centred median around each full hour,
+    after removing spikes > 15 cm from a 31-minute running median."""
     out = {}
     for c in wide.columns:
         s = wide[c].dropna()
+        if s.empty:
+            continue
         med = s.rolling("31min", center=True).median()
         s = s[(s - med).abs() < 0.15]
-        step_min = max(1.0, float(np.median(np.diff(s.index.values).astype("timedelta64[s]").astype(float))) / 60)
-        g = s.resample("1h")
-        h = g.median()
-        h[g.count() < (60 / step_min) * 0.66] = np.nan
-        out[c] = h
+        smooth = s.rolling("21min", center=True, min_periods=5).median()
+        hours = pd.date_range(s.index.min().ceil("h"), s.index.max().floor("h"), freq="1h")
+        out[c] = smooth.reindex(hours, method="nearest", tolerance=pd.Timedelta("3min"))
     return pd.DataFrame(out)
 
 
@@ -409,7 +410,7 @@ def tide_fit(wl: pd.Series) -> tuple[pd.DataFrame, dict]:
         n_ok = int(yv.notna().sum())
         cov = n_ok / m.sum()
         if n_ok < 24 * 60:  # need two months minimum
-            fits[str(y)] = {"coverage": round(cov, 3), "fitted": False}
+            fits[str(y)] = {"coverage": round(float(cov), 3), "fitted": False}
             continue
         ok_idx = np.where(yv.notna())[0]
         span = float(ok_idx[-1] - ok_idx[0] + 1)
@@ -419,8 +420,8 @@ def tide_fit(wl: pd.Series) -> tuple[pd.DataFrame, dict]:
         tide[m] = pred
         res = yv.to_numpy() - pred
         fits[str(y)] = {
-            "coverage": round(cov, 3), "fitted": True, "n_constituents": len(names),
-            "long_period_included": cov >= 0.9, "mean_m": round(float(model["coef"][0]), 4),
+            "coverage": round(float(cov), 3), "fitted": True, "n_constituents": len(names),
+            "long_period_included": bool(cov >= 0.9), "mean_m": round(float(model["coef"][0]), 4),
             "resid_std_m": round(float(np.nanstd(res)), 4),
             "amps": {k: [round(a, 4), round(p, 1)] for k, (a, p) in model["amps"].items()
                      if k in ("M2", "S2", "N2", "K2", "K1", "O1", "P1", "Q1", "M4", "SA", "SSA")},
@@ -474,7 +475,7 @@ def run(args, out: Path) -> None:
         SUMMARY["checks"]["spikes_removed"] = n_spikes
         df, fits = tide_fit(wl)
         df.to_csv(out / "wl_hourly.csv.gz", float_format="%.4f")
-        (out / "tide_fits.json").write_text(json.dumps(fits, indent=1))
+        (out / "tide_fits.json").write_text(json.dumps(fits, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o)))
         SUMMARY["checks"]["coverage_by_year"] = {y: f["coverage"] for y, f in fits.items()}
         SUMMARY["checks"]["resid_std_m_by_year"] = {y: f.get("resid_std_m") for y, f in fits.items() if f.get("fitted")}
         try:
