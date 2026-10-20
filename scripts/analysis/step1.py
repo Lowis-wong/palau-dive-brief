@@ -50,7 +50,7 @@ def log(*a):
     LOG.append(line)
 
 
-def get(url: str, tries=4, timeout=120) -> bytes:
+def get(url: str, tries=3, timeout=120) -> bytes:
     last = None
     for i in range(tries):
         try:
@@ -104,25 +104,65 @@ def parse_uhslc_csv(raw: bytes) -> pd.Series:
     return s[~s.index.duplicated()]
 
 
-@guarded("uhslc")
-def fetch_uhslc() -> dict[str, pd.Series]:
-    urls = {
-        "rq_a": "https://uhslc.soest.hawaii.edu/data/csv/rqds/pacific/hourly/h007a.csv",
-        "rq_b": "https://uhslc.soest.hawaii.edu/data/csv/rqds/pacific/hourly/h007b.csv",
-        "fast": "https://uhslc.soest.hawaii.edu/data/csv/fast/hourly/h007.csv",
-    }
-    out = {}
-    for k, u in urls.items():
+def fetch_erddap(dataset: str, y0: int, y1: int) -> pd.Series:
+    parts = []
+    for ya in range(y0, y1 + 1, 10):
+        yb = min(ya + 9, y1)
+        q = (f"time,sea_level,record_id,quality&ssc_id=%22mala%22"
+             f"&time%3E={ya}-01-01T00:00:00Z&time%3C={yb + 1}-01-01T00:00:00Z")
+        url = f"https://uhslc.soest.hawaii.edu/erddap/tabledap/{dataset}.csv?{q}"
+        t = time.time()
         try:
-            s = parse_uhslc_csv(get(u))
-            out[k] = s
-            SUMMARY["sources"][f"uhslc_{k}"] = {
-                "url": u, "first": str(s.first_valid_index()), "last": str(s.last_valid_index()),
-                "n_valid": int(s.notna().sum()), "mean_m": round(float(s.mean()), 3)}
-            log(f"  {k}: {s.first_valid_index()} .. {s.last_valid_index()} valid={s.notna().sum()}")
+            raw = get(url, tries=2, timeout=240)
         except Exception as e:  # noqa: BLE001
-            SUMMARY["errors"][f"uhslc_{k}"] = str(e)
-            log(f"  {k} failed: {e}")
+            if "404" in str(e) or "No data" in str(e) or "nRows = 0" in str(e):
+                log(f"  {dataset} {ya}-{yb}: no data")
+                continue
+            raise
+        df = pd.read_csv(io.BytesIO(raw), skiprows=[1])  # second row holds units
+        log(f"  {dataset} {ya}-{yb}: {len(df)} rows in {time.time() - t:.0f}s; records {sorted(df.record_id.unique())[:5]}")
+        parts.append(df)
+    if not parts:
+        raise RuntimeError(f"{dataset}: no rows")
+    df = pd.concat(parts, ignore_index=True)
+    df["time"] = pd.to_datetime(df["time"]).dt.tz_localize(None)
+    v = pd.to_numeric(df["sea_level"], errors="coerce")
+    v[(v <= -32000)] = np.nan
+    if v.median() > 50:  # millimetres
+        v = v / 1000.0
+    SUMMARY["sources"][f"erddap_{dataset}_records"] = {str(k): int(n) for k, n in df.record_id.value_counts().items()}
+    s = pd.Series(v.values, index=pd.DatetimeIndex(df["time"], name="time_utc")).sort_index()
+    return s[~s.index.duplicated(keep="last")]
+
+
+@guarded("uhslc")
+def fetch_uhslc(start_year: int) -> dict[str, pd.Series]:
+    out = {}
+    now_y = datetime.now(timezone.utc).year
+    for key, ds in (("rq", "global_hourly_rqds"), ("fast", "global_hourly_fast")):
+        t = time.time()
+        try:
+            s = fetch_erddap(ds, start_year if key == "rq" else max(start_year, now_y - 12), now_y)
+            out[key] = s
+            SUMMARY["sources"][f"uhslc_{key}"] = {
+                "via": "erddap", "first": str(s.first_valid_index()), "last": str(s.last_valid_index()),
+                "n_valid": int(s.notna().sum()), "mean_m": round(float(s.mean()), 3), "secs": round(time.time() - t)}
+            log(f"  {key}: {s.first_valid_index()} .. {s.last_valid_index()} valid={s.notna().sum()}")
+        except Exception as e:  # noqa: BLE001
+            SUMMARY["errors"][f"uhslc_erddap_{key}"] = str(e)[:400]
+            log(f"  erddap {key} failed after {time.time() - t:.0f}s: {e}")
+    if "rq" not in out:  # fallback: per-version CSV files
+        for k, u in {"rq_a": "https://uhslc.soest.hawaii.edu/data/csv/rqds/pacific/hourly/h007a.csv",
+                     "rq_b": "https://uhslc.soest.hawaii.edu/data/csv/rqds/pacific/hourly/h007b.csv"}.items():
+            t = time.time()
+            try:
+                s = parse_uhslc_csv(get(u, tries=2, timeout=180))
+                out[k] = s
+                SUMMARY["sources"][f"uhslc_{k}"] = {"via": "csv", "first": str(s.first_valid_index()),
+                                                    "last": str(s.last_valid_index()), "n_valid": int(s.notna().sum())}
+            except Exception as e:  # noqa: BLE001
+                SUMMARY["errors"][f"uhslc_csv_{k}"] = str(e)[:400]
+                log(f"  csv {k} failed after {time.time() - t:.0f}s: {e}")
     return out
 
 
@@ -165,9 +205,10 @@ def ioc_hourly(wide: pd.DataFrame) -> pd.DataFrame:
         s = wide[c].dropna()
         med = s.rolling("31min", center=True).median()
         s = s[(s - med).abs() < 0.15]
+        step_min = max(1.0, float(np.median(np.diff(s.index.values).astype("timedelta64[s]").astype(float))) / 60)
         g = s.resample("1h")
         h = g.median()
-        h[g.count() < 40] = np.nan
+        h[g.count() < (60 / step_min) * 0.66] = np.nan
         out[c] = h
     return pd.DataFrame(out)
 
@@ -281,10 +322,10 @@ def fetch_weather(start_year: int) -> pd.DataFrame:
 def merge_water_level(uh: dict[str, pd.Series], ioc_h: pd.DataFrame | None) -> tuple[pd.Series, pd.DataFrame]:
     """Priority rq_b > rq_a > fast > IOC. Each source is shifted onto the reference datum by the
     median difference in its overlap with the reference (logged in summary)."""
-    src = pd.DataFrame({k: uh[k] for k in ("rq_a", "rq_b", "fast") if uh and k in uh})
+    src = pd.DataFrame({k: uh[k] for k in ("rq", "rq_a", "rq_b", "fast") if uh and k in uh})
     offsets: dict = {}
     adj: dict[str, pd.Series] = {}
-    ref = next((k for k in ("rq_b", "rq_a", "fast") if k in src), None)
+    ref = next((k for k in ("rq", "rq_b", "rq_a", "fast") if k in src), None)
     if ref:
         adj[ref] = src[ref]
         for k in src.columns:
@@ -301,7 +342,7 @@ def merge_water_level(uh: dict[str, pd.Series], ioc_h: pd.DataFrame | None) -> t
                 offsets[k] = {"vs": ref, "overlap_h": len(both), "note": "no usable overlap, no shift"}
             adj[k] = src[k] - off
     base = None
-    for k in ("fast", "rq_a", "rq_b"):
+    for k in ("fast", "rq_a", "rq_b", "rq"):
         if k in adj:
             base = adj[k] if base is None else adj[k].combine_first(base)
 
@@ -333,7 +374,7 @@ def merge_water_level(uh: dict[str, pd.Series], ioc_h: pd.DataFrame | None) -> t
 
     merged = None
     used = pd.Series(dtype=object)
-    for k in ("ioc", "fast", "rq_a", "rq_b"):  # later wins
+    for k in ("ioc", "fast", "rq_a", "rq_b", "rq"):  # later wins
         if k in adj:
             v = adj[k].dropna()
             merged = v if merged is None else v.combine_first(merged)
@@ -402,12 +443,27 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     SUMMARY["run_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
     SUMMARY["start_year"] = args.start
+    T0 = time.time()
+    try:
+        run(args, out)
+    except Exception as e:  # noqa: BLE001
+        SUMMARY["errors"]["main"] = f"{type(e).__name__}: {e}"
+        log(f"!! main failed: {e}\n{traceback.format_exc()}")
+    finally:
+        SUMMARY["runtime_s"] = round(time.time() - T0)
+        (out / "summary.json").write_text(json.dumps(SUMMARY, indent=1, default=str))
+        (out / "log.txt").write_text("\n".join(LOG))
+        log("done")
 
-    uh = fetch_uhslc() or {}
+
+def run(args, out: Path) -> None:
+    uh = fetch_uhslc(args.start) or {}
+    for k, v in uh.items():
+        v.to_frame("sl_m").to_csv(out / f"uhslc_{k}_hourly.csv.gz", float_format="%.4f")
     ioc_wide = fetch_ioc()
     ioc_h = ioc_hourly(ioc_wide) if ioc_wide is not None else None
     if ioc_wide is not None:
-        ioc_wide.resample("5min").median().to_csv(out / "ioc_recent_5min.csv.gz")
+        ioc_wide.resample("5min").median().to_csv(out / "ioc_recent_5min.csv.gz", float_format="%.4f")
 
     if uh or ioc_h is not None:
         wl, src = merge_water_level(uh, ioc_h)
@@ -419,33 +475,13 @@ def main() -> None:
         df, fits = tide_fit(wl)
         df.to_csv(out / "wl_hourly.csv.gz", float_format="%.4f")
         (out / "tide_fits.json").write_text(json.dumps(fits, indent=1))
-        years = {y: f["coverage"] for y, f in fits.items()}
-        SUMMARY["checks"]["coverage_by_year"] = years
+        SUMMARY["checks"]["coverage_by_year"] = {y: f["coverage"] for y, f in fits.items()}
         SUMMARY["checks"]["resid_std_m_by_year"] = {y: f.get("resid_std_m") for y, f in fits.items() if f.get("fitted")}
-
-        # NOAA comparison over the most recent full calendar month with data
-        last = df.wl_m.last_valid_index()
-        if last is not None:
-            mstart = (last - pd.DateOffset(months=1)).replace(day=1, hour=0)
-            mend = mstart + pd.DateOffset(months=1) - pd.Timedelta(hours=1)
-            noaa = fetch_noaa_hourly(mstart.to_pydatetime(), mend.to_pydatetime())
-            if noaa is not None:
-                cmp_ = pd.concat([noaa, df.tide_m, df.wl_m], axis=1).loc[mstart:mend].dropna()
-                a = cmp_["noaa"] - cmp_["noaa"].mean()
-                b = cmp_["tide_m"] - cmp_["tide_m"].mean()
-                lags = range(-90, 91, 6)
-                fine = pd.Series(b.values, index=b.index).resample("6min").interpolate()
-                best = None
-                for L in lags:
-                    sh = fine.shift(freq=f"{L}min").reindex(a.index)
-                    rms = float((a - sh).std())
-                    if best is None or rms < best[1]:
-                        best = (L, rms)
-                cmp_.to_csv(out / "noaa_check.csv.gz", float_format="%.4f")
-                SUMMARY["checks"]["noaa_vs_fit"] = {
-                    "month": str(mstart.date()), "n": len(cmp_), "rms_diff_m": round(float((a - b).std()), 4),
-                    "corr": round(float(a.corr(b)), 5), "best_shift_min": best[0], "rms_at_best_shift_m": round(best[1], 4),
-                    "noaa_minus_obs_mean_m": round(float((cmp_["noaa"] - cmp_["wl_m"]).mean()), 4)}
+        try:
+            noaa_check(df, out)
+        except Exception as e:  # noqa: BLE001
+            SUMMARY["errors"]["noaa_check"] = str(e)
+        (out / "summary.json").write_text(json.dumps(SUMMARY, indent=1, default=str))
 
     if not args.skip_forcing:
         waves = fetch_waves(args.start)
@@ -457,9 +493,32 @@ def main() -> None:
             f.to_csv(out / "forcing_hourly.csv.gz", float_format="%.3f")
             SUMMARY["sources"]["forcing_columns"] = list(f.columns)
 
-    (out / "summary.json").write_text(json.dumps(SUMMARY, indent=1, default=str))
-    (out / "log.txt").write_text("\n".join(LOG))
-    log("done")
+
+def noaa_check(df: pd.DataFrame, out: Path) -> None:
+    """NOAA hourly predictions vs our tide fit, most recent full month with observations."""
+    last = df.wl_m.last_valid_index()
+    if last is None:
+        return
+    mstart = (last - pd.DateOffset(months=1)).replace(day=1, hour=0)
+    mend = mstart + pd.DateOffset(months=1) - pd.Timedelta(hours=1)
+    noaa = fetch_noaa_hourly(mstart.to_pydatetime(), mend.to_pydatetime())
+    if noaa is None:
+        return
+    cmp_ = pd.concat([noaa, df.tide_m, df.wl_m], axis=1).loc[mstart:mend].dropna()
+    a = cmp_["noaa"] - cmp_["noaa"].mean()
+    b = cmp_["tide_m"] - cmp_["tide_m"].mean()
+    fine = b.resample("6min").interpolate()
+    best = None
+    for L in range(-90, 91, 6):
+        sh = fine.shift(freq=f"{L}min").reindex(a.index)
+        rms = float((a - sh).std())
+        if best is None or rms < best[1]:
+            best = (L, rms)
+    cmp_.to_csv(out / "noaa_check.csv.gz", float_format="%.4f")
+    SUMMARY["checks"]["noaa_vs_fit"] = {
+        "month": str(mstart.date()), "n": len(cmp_), "rms_diff_m": round(float((a - b).std()), 4),
+        "corr": round(float(a.corr(b)), 5), "best_shift_min": best[0], "rms_at_best_shift_m": round(best[1], 4),
+        "noaa_minus_obs_mean_m": round(float((cmp_["noaa"] - cmp_["wl_m"]).mean()), 4)}
 
 
 if __name__ == "__main__":
