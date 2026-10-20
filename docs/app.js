@@ -428,6 +428,8 @@ function initLogForm() {
 $("#plan").addEventListener("input", (e) => { planK = +e.target.value; if (brief) { renderSites(); movePlanLine(); } });
 function net() { $("#net").hidden = navigator.onLine; }
 addEventListener("online", () => { net(); load(); });
+// iOS keeps home-screen apps alive in the background: refetch when brought back to the front.
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && navigator.onLine) load(); });
 addEventListener("offline", net);
 net(); initLogForm(); load();
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
