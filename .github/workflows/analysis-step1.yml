@@ -11,6 +11,8 @@ on:
     paths:
       - "scripts/analysis/**"
       - ".github/workflows/analysis-step1.yml"
+  schedule:
+    - cron: "23 */3 * * *"   # resume forcing download until complete (cheap no-op afterwards)
 
 permissions:
   contents: write
@@ -22,15 +24,27 @@ concurrency:
 jobs:
   step1:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 85
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install numpy pandas
-      - name: Fetch and process
-        run: python scripts/analysis/step1.py --start "${{ github.event.inputs.start || '1980' }}" --out "$RUNNER_TEMP/out/step1"
+      - name: Restore previous results
+        run: |
+          git clone -q --depth 1 --branch analysis-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/out" \
+            || mkdir -p "$RUNNER_TEMP/out"
+          rm -rf "$RUNNER_TEMP/out/.git"
+      - name: Water level, tide fit, residuals
+        if: github.event_name != 'schedule' || hashFiles('never') == ''
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ -f "$RUNNER_TEMP/out/step1/wl_hourly.csv.gz" ]; then
+            echo "scheduled run: water level already built"; exit 0; fi
+          python scripts/analysis/step1.py --skip-forcing --start "${{ github.event.inputs.start || '1980' }}" --out "$RUNNER_TEMP/out/step1"
+      - name: ERA5 forcing (resumable)
+        run: python scripts/analysis/forcing.py --out "$RUNNER_TEMP/out/step1" --start "${{ github.event.inputs.start || '1980' }}" --budget-min 65
       - name: Publish results to the analysis-data branch
         if: always()
         run: |
