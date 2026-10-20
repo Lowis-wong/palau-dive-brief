@@ -59,6 +59,13 @@ def fit(t_hours: np.ndarray, h: np.ndarray, names: list[str]) -> dict:
     return {"names": names, "coef": coef, "amps": amps}
 
 
-def predict(t_hours: np.ndarray, model: dict, include_mean: bool = True) -> np.ndarray:
-    y = design(t_hours, model["names"]) @ model["coef"]
-    return y if include_mean else y - model["coef"][0]
+def predict(t_hours: np.ndarray, model: dict, include_mean: bool = True, exclude: set[str] | None = None) -> np.ndarray:
+    """Reconstruct the tide. `exclude` drops constituents (e.g. LONG_PERIOD) from the reconstruction
+    while their fitted coefficients still kept the other estimates unbiased."""
+    coef = np.array(model["coef"], dtype=float).copy()
+    if not include_mean:
+        coef[0] = 0.0
+    for i, n in enumerate(model["names"]):
+        if exclude and n in exclude:
+            coef[1 + 2 * i] = coef[2 + 2 * i] = 0.0
+    return design(t_hours, model["names"]) @ coef

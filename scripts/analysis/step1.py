@@ -177,13 +177,19 @@ def fetch_ioc(days: int = 120) -> pd.DataFrame | None:
         t1 = min(t0 + timedelta(days=7), end)
         q = urllib.parse.urlencode({"query": "data", "code": "mala", "timestart": t0.strftime("%Y-%m-%dT%H:%M"),
                                     "timestop": t1.strftime("%Y-%m-%dT%H:%M"), "format": "json"})
-        try:
-            rows = json.loads(get("https://www.ioc-sealevelmonitoring.org/service.php?" + q))
-            if isinstance(rows, list) and rows:
-                frames.append(pd.DataFrame(rows))
-            log(f"  {t0:%Y-%m-%d}: {len(rows) if isinstance(rows, list) else rows}")
-        except Exception as e:  # noqa: BLE001
-            log(f"  {t0:%Y-%m-%d} failed: {e}")
+        rows = None
+        for attempt in range(3):
+            try:
+                rows = json.loads(get("https://www.ioc-sealevelmonitoring.org/service.php?" + q, tries=2, timeout=90))
+                break
+            except Exception as e:  # noqa: BLE001
+                log(f"  {t0:%Y-%m-%d} attempt {attempt + 1} failed: {e}")
+                time.sleep(10)
+        if isinstance(rows, list) and rows:
+            frames.append(pd.DataFrame(rows))
+        else:
+            SUMMARY.setdefault("checks", {}).setdefault("ioc_missing_chunks", []).append(f"{t0:%Y-%m-%d}")
+        log(f"  {t0:%Y-%m-%d}: {len(rows) if isinstance(rows, list) else rows}")
         t0 = t1
         time.sleep(1)
     if not frames:
@@ -364,12 +370,14 @@ def merge_water_level(uh: dict[str, pd.Series], ioc_h: pd.DataFrame | None) -> t
             offsets[f"ioc_{c}"] = stats
             if r > 0.95 and (best is None or stats["rms_after_offset_m"] < best[1]["rms_after_offset_m"]):
                 best = (c, stats)
+        extra = {}
         if best:
             ioc_choice = best[0]
             adj["ioc"] = ioc_h[ioc_choice] - best[1]["offset_m"]
-            src["ioc"] = adj["ioc"]
+            extra["ioc"] = adj["ioc"]
         for c in ioc_h.columns:
-            src[f"ioc_raw_{c}"] = ioc_h[c]
+            extra[f"ioc_raw_{c}"] = ioc_h[c]
+        src = pd.concat([src, pd.DataFrame(extra)], axis=1)  # outer join keeps IOC hours beyond UHSLC
     SUMMARY["checks"]["source_offsets"] = offsets
     SUMMARY["checks"]["ioc_sensor_used"] = ioc_choice
 
@@ -416,9 +424,10 @@ def tide_fit(wl: pd.Series) -> tuple[pd.DataFrame, dict]:
         span = float(ok_idx[-1] - ok_idx[0] + 1)
         names = H.select_constituents(span, include_long_period=cov >= 0.9)
         model = H.fit(th[m], yv.to_numpy(), names)
-        pred = H.predict(th[m], model)
-        tide[m] = pred
-        res = yv.to_numpy() - pred
+        # Tide = astronomical short-period part only. The yearly mean and the seasonal/long-period
+        # terms stay in the residual, so there is no jump at year boundaries.
+        tide[m] = H.predict(th[m], model, include_mean=False, exclude=H.LONG_PERIOD)
+        res = yv.to_numpy() - H.predict(th[m], model)
         fits[str(y)] = {
             "coverage": round(float(cov), 3), "fitted": True, "n_constituents": len(names),
             "long_period_included": bool(cov >= 0.9), "mean_m": round(float(model["coef"][0]), 4),
@@ -427,9 +436,15 @@ def tide_fit(wl: pd.Series) -> tuple[pd.DataFrame, dict]:
                      if k in ("M2", "S2", "N2", "K2", "K1", "O1", "P1", "Q1", "M4", "SA", "SSA")},
         }
     df = pd.DataFrame({"wl_m": wl, "tide_m": tide})
-    df["resid_m"] = df.wl_m - df.tide_m
+    df["resid_m"] = df.wl_m - df.tide_m - float(np.nanmean(wl.to_numpy() - tide))  # non-tidal level, zero mean overall
     df["resid_30d_m"] = df.resid_m.rolling(24 * 30, center=True, min_periods=24 * 10).mean()
     df["resid_short_m"] = df.resid_m - df.resid_30d_m
+    # Godin 24-24-25 h low-pass removes leftover tidal-band energy (~35-40% of resid_short variance):
+    # setup_m is the slowly varying "extra water" (hours to weeks) relative to the 30-day mean.
+    g = df.resid_m.rolling(24, center=True, min_periods=18).mean()
+    g = g.rolling(24, center=True, min_periods=18).mean().rolling(25, center=True, min_periods=19).mean()
+    df["resid_lp_m"] = g
+    df["setup_m"] = g - df.resid_30d_m
     return df, fits
 
 
