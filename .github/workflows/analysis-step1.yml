@@ -1,0 +1,42 @@
+name: Analysis step 1 (lagoon set-up data)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First year"
+        default: "1980"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/analysis/**"
+      - ".github/workflows/analysis-step1.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analysis-step1
+  cancel-in-progress: true
+
+jobs:
+  step1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas
+      - name: Fetch and process
+        run: python scripts/analysis/step1.py --start "${{ github.event.inputs.start || '1980' }}" --out "$RUNNER_TEMP/out/step1"
+      - name: Publish results to the analysis-data branch
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/out"
+          git init -q -b analysis-data
+          git add -A
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "Step 1 data $(date -u '+%Y-%m-%d %H:%M') UTC (run ${{ github.run_id }})"
+          git push -f -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" analysis-data

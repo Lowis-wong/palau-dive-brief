@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .DS_Store
 docs/data/brief.json
+analysis_out/
+__pycache__/
