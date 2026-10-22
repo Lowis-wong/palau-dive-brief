@@ -2,9 +2,12 @@ name: Build dive brief
 
 on:
   schedule:
-    # Times are UTC; Palau = UTC+9. Off-the-hour minutes avoid GitHub's busiest slots.
-    - cron: "17 20 * * *"   # 05:17 Palau
-    - cron: "41 21 * * *"   # 06:41 Palau (backup run before 08:00 departure)
+    # Times are UTC; Palau = UTC+9. GitHub delays scheduled runs here by ~3-5 h, so the morning
+    # brief is attempted several times overnight; any one of them landing before 08:00 is enough.
+    - cron: "11 15 * * *"   # 00:11 Palau
+    - cron: "13 17 * * *"   # 02:13 Palau
+    - cron: "17 19 * * *"   # 04:17 Palau
+    - cron: "41 21 * * *"   # 06:41 Palau
     - cron: "7 9 * * *"     # 18:07 Palau (evening preview for tomorrow)
   workflow_dispatch: {}
   push:
