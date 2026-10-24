@@ -1,0 +1,12 @@
+{
+ "status": "complete",
+ "fetched_this_run": 4,
+ "skipped_existing": 184,
+ "files": 188,
+ "jobs": 188,
+ "wave_variant": {
+  "models": "era5_ocean"
+ },
+ "run_utc": "2026-10-24 16:03",
+ "minutes": 3.8
+}

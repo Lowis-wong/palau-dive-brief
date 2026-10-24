@@ -1,0 +1,345 @@
+[10:19:57]   wave W 2026: 6864 rows, grid 7.5,134.0
+[10:23:05]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:23:17]   wave E 2026: 6864 rows, grid 7.5,135.0
+[10:23:26]   wave S 2026: 6864 rows, grid 6.5,134.5
+[10:23:35]   wx koror 2026: 6888 rows, grid 7.25,134.5
+[10:23:44]   wave W 2025: 8760 rows, grid 7.5,134.0
+[10:26:53]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:27:04]   wave E 2025: 8760 rows, grid 7.5,135.0
+[10:30:12]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:30:23]   wave S 2025: 8760 rows, grid 6.5,134.5
+[10:30:33]   wx koror 2025: 8760 rows, grid 7.25,134.5
+[10:30:42]   wave W 2024: 8784 rows, grid 7.5,134.0
+[10:33:50]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:34:02]   wave E 2024: 8784 rows, grid 7.5,135.0
+[10:37:10]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:37:21]   wave S 2024: 8784 rows, grid 6.5,134.5
+[10:37:31]   wx koror 2024: 8784 rows, grid 7.25,134.5
+[10:37:40]   wave W 2023: 8760 rows, grid 7.5,134.0
+[10:40:48]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:40:59]   wave E 2023: 8760 rows, grid 7.5,135.0
+[10:41:09]   wave S 2023: 8760 rows, grid 6.5,134.5
+[10:41:18]   wx koror 2023: 8760 rows, grid 7.25,134.5
+[10:41:28]   wave W 2022: 8760 rows, grid 7.5,134.0
+[10:41:37]   wave E 2022: 8760 rows, grid 7.5,135.0
+[10:41:46]   wave S 2022: 8760 rows, grid 6.5,134.5
+[10:41:56]   wx koror 2022: 8760 rows, grid 7.25,134.5
+[10:42:05]   wave W 2021: 8760 rows, grid 7.5,134.0
+[10:45:13]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:45:24]   wave E 2021: 8760 rows, grid 7.5,135.0
+[10:48:32]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:48:44]   wave S 2021: 8760 rows, grid 6.5,134.5
+[10:48:53]   wx koror 2021: 8760 rows, grid 7.25,134.5
+[10:49:02]   wave W 2020: 8784 rows, grid 7.5,134.0
+[10:52:10]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:52:22]   wave E 2020: 8784 rows, grid 7.5,135.0
+[10:55:30]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:55:41]   wave S 2020: 8784 rows, grid 6.5,134.5
+[10:55:50]   wx koror 2020: 8784 rows, grid 7.25,134.5
+[10:55:59]   wave W 2019: 8760 rows, grid 7.5,134.0
+[10:59:08]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[10:59:19]   wave E 2019: 8760 rows, grid 7.5,135.0
+[11:02:27]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:02:38]   wave S 2019: 8760 rows, grid 6.5,134.5
+[11:02:47]   wx koror 2019: 8760 rows, grid 7.25,134.5
+[11:02:57]   wave W 2018: 8760 rows, grid 7.5,134.0
+[11:03:06]   wave E 2018: 8760 rows, grid 7.5,135.0
+[11:03:15]   wave S 2018: 8760 rows, grid 6.5,134.5
+[11:03:24]   wx koror 2018: 8760 rows, grid 7.25,134.5
+[11:03:33]   wave W 2017: 8760 rows, grid 7.5,134.0
+[11:03:43]   wave E 2017: 8760 rows, grid 7.5,135.0
+[11:03:52]   wave S 2017: 8760 rows, grid 6.5,134.5
+[11:04:32]   wx koror 2017 failed: Expecting value: line 1 column 1 (char 0)
+[11:04:41]   wave W 2016: 8784 rows, grid 7.5,134.0
+[11:07:49]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:08:00]   wave E 2016: 8784 rows, grid 7.5,135.0
+[11:11:09]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:11:20]   wave S 2016: 8784 rows, grid 6.5,134.5
+[11:11:29]   wx koror 2016: 8784 rows, grid 7.25,134.5
+[11:11:38]   wave W 2015: 8760 rows, grid 7.5,134.0
+[11:11:47]   wave E 2015: 8760 rows, grid 7.5,135.0
+[11:11:57]   wave S 2015: 8760 rows, grid 6.5,134.5
+[11:12:06]   wx koror 2015: 8760 rows, grid 7.25,134.5
+[11:12:15]   wave W 2014: 8760 rows, grid 7.5,134.0
+[11:12:24]   wave E 2014: 8760 rows, grid 7.5,135.0
+[11:12:33]   wave S 2014: 8760 rows, grid 6.5,134.5
+[11:12:43]   wx koror 2014: 8760 rows, grid 7.25,134.5
+[11:12:52]   wave W 2013: 8760 rows, grid 7.5,134.0
+[11:13:01]   wave E 2013: 8760 rows, grid 7.5,135.0
+[11:13:10]   wave S 2013: 8760 rows, grid 6.5,134.5
+[11:13:19]   wx koror 2013: 8760 rows, grid 7.25,134.5
+[11:13:28]   wave W 2012: 8784 rows, grid 7.5,134.0
+[11:16:37]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:16:48]   wave E 2012: 8784 rows, grid 7.5,135.0
+[11:16:57]   wave S 2012: 8784 rows, grid 6.5,134.5
+[11:17:06]   wx koror 2012: 8784 rows, grid 7.25,134.5
+[11:17:15]   wave W 2011: 8760 rows, grid 7.5,134.0
+[11:20:24]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:20:35]   wave E 2011: 8760 rows, grid 7.5,135.0
+[11:23:43]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:23:54]   wave S 2011: 8760 rows, grid 6.5,134.5
+[11:24:04]   wx koror 2011: 8760 rows, grid 7.25,134.5
+[11:24:13]   wave W 2010: 8760 rows, grid 7.5,134.0
+[11:24:22]   wave E 2010: 8760 rows, grid 7.5,135.0
+[11:24:31]   wave S 2010: 8760 rows, grid 6.5,134.5
+[11:24:40]   wx koror 2010: 8760 rows, grid 7.25,134.5
+[11:24:50]   wave W 2009: 8760 rows, grid 7.5,134.0
+[11:27:07]   wave W 2026: 6864 rows, grid 7.5,134.0
+[11:30:15]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:30:26]   wave E 2026: 6864 rows, grid 7.5,135.0
+[11:30:35]   wave S 2026: 6864 rows, grid 6.5,134.5
+[11:30:44]   wx koror 2026: 6888 rows, grid 7.25,134.5
+[11:30:53]   wx koror 2017: 8760 rows, grid 7.25,134.5
+[11:31:02]   wave E 2009: 8760 rows, grid 7.5,135.0
+[11:34:10]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:34:21]   wave S 2009: 8760 rows, grid 6.5,134.5
+[11:34:30]   wx koror 2009: 8760 rows, grid 7.25,134.5
+[11:34:39]   wave W 2008: 8784 rows, grid 7.5,134.0
+[11:37:47]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:37:58]   wave E 2008: 8784 rows, grid 7.5,135.0
+[11:41:06]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:41:17]   wave S 2008: 8784 rows, grid 6.5,134.5
+[11:41:26]   wx koror 2008: 8784 rows, grid 7.25,134.5
+[11:41:35]   wave W 2007: 8760 rows, grid 7.5,134.0
+[11:41:43]   wave E 2007: 8760 rows, grid 7.5,135.0
+[11:41:52]   wave S 2007: 8760 rows, grid 6.5,134.5
+[11:42:01]   wx koror 2007: 8760 rows, grid 7.25,134.5
+[11:42:10]   wave W 2006: 8760 rows, grid 7.5,134.0
+[11:45:18]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:45:29]   wave E 2006: 8760 rows, grid 7.5,135.0
+[11:45:38]   wave S 2006: 8760 rows, grid 6.5,134.5
+[11:45:47]   wx koror 2006: 8760 rows, grid 7.25,134.5
+[11:45:56]   wave W 2005: 8760 rows, grid 7.5,134.0
+[11:49:04]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:49:15]   wave E 2005: 8760 rows, grid 7.5,135.0
+[11:52:23]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:52:34]   wave S 2005: 8760 rows, grid 6.5,134.5
+[11:52:43]   wx koror 2005: 8760 rows, grid 7.25,134.5
+[11:52:52]   wave W 2004: 8784 rows, grid 7.5,134.0
+[11:53:01]   wave E 2004: 8784 rows, grid 7.5,135.0
+[11:53:10]   wave S 2004: 8784 rows, grid 6.5,134.5
+[11:53:19]   wx koror 2004: 8784 rows, grid 7.25,134.5
+[11:53:28]   wave W 2003: 8760 rows, grid 7.5,134.0
+[11:53:37]   wave E 2003: 8760 rows, grid 7.5,135.0
+[11:53:46]   wave S 2003: 8760 rows, grid 6.5,134.5
+[11:53:55]   wx koror 2003: 8760 rows, grid 7.25,134.5
+[11:54:03]   wave W 2002: 8760 rows, grid 7.5,134.0
+[11:57:12]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:57:22]   wave E 2002: 8760 rows, grid 7.5,135.0
+[12:00:31]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:00:41]   wave S 2002: 8760 rows, grid 6.5,134.5
+[12:00:51]   wx koror 2002: 8760 rows, grid 7.25,134.5
+[12:00:59]   wave W 2001: 8760 rows, grid 7.5,134.0
+[12:04:08]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:04:19]   wave E 2001: 8760 rows, grid 7.5,135.0
+[12:04:27]   wave S 2001: 8760 rows, grid 6.5,134.5
+[12:04:37]   wx koror 2001: 8760 rows, grid 7.25,134.5
+[12:04:45]   wave W 2000: 8784 rows, grid 7.5,134.0
+[12:07:54]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:08:04]   wave E 2000: 8784 rows, grid 7.5,135.0
+[12:11:13]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:11:24]   wave S 2000: 8784 rows, grid 6.5,134.5
+[12:11:33]   wx koror 2000: 8784 rows, grid 7.25,134.5
+[12:11:41]   wave W 1999: 8760 rows, grid 7.5,134.0
+[12:14:50]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:15:00]   wave E 1999: 8760 rows, grid 7.5,135.0
+[12:15:09]   wave S 1999: 8760 rows, grid 6.5,134.5
+[12:15:18]   wx koror 1999: 8760 rows, grid 7.25,134.5
+[12:15:27]   wave W 1998: 8760 rows, grid 7.5,134.0
+[12:15:36]   wave E 1998: 8760 rows, grid 7.5,135.0
+[12:15:45]   wave S 1998: 8760 rows, grid 6.5,134.5
+[12:15:54]   wx koror 1998: 8760 rows, grid 7.25,134.5
+[12:16:03]   wave W 1997: 8760 rows, grid 7.5,134.0
+[12:16:12]   wave E 1997: 8760 rows, grid 7.5,135.0
+[12:16:21]   wave S 1997: 8760 rows, grid 6.5,134.5
+[12:17:08]   wx koror 1997: 8760 rows, grid 7.25,134.5
+[12:17:17]   wave W 1996: 8784 rows, grid 7.5,134.0
+[12:17:26]   wave E 1996: 8784 rows, grid 7.5,135.0
+[12:17:35]   wave S 1996: 8784 rows, grid 6.5,134.5
+[12:17:44]   wx koror 1996: 8784 rows, grid 7.25,134.5
+[12:17:53]   wave W 1995: 8760 rows, grid 7.5,134.0
+[12:21:01]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:21:12]   wave E 1995: 8760 rows, grid 7.5,135.0
+[12:24:20]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:24:31]   wave S 1995: 8760 rows, grid 6.5,134.5
+[12:24:40]   wx koror 1995: 8760 rows, grid 7.25,134.5
+[12:24:49]   wave W 1994: 8760 rows, grid 7.5,134.0
+[12:27:57]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:28:08]   wave E 1994: 8760 rows, grid 7.5,135.0
+[12:28:17]   wave S 1994: 8760 rows, grid 6.5,134.5
+[12:28:57]   wx koror 1994 failed: Expecting value: line 1 column 1 (char 0)
+[12:29:05]   wave W 1993: 8760 rows, grid 7.5,134.0
+[12:32:14]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:32:25]   wave E 1993: 8760 rows, grid 7.5,135.0
+[17:17:55]   wave W 2026: 6864 rows, grid 7.5,134.0
+[17:21:03]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:21:14]   wave E 2026: 6864 rows, grid 7.5,135.0
+[17:24:22]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:24:33]   wave S 2026: 6864 rows, grid 6.5,134.5
+[17:24:43]   wx koror 2026: 6888 rows, grid 7.25,134.5
+[17:27:51]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:28:02]   wx koror 1994: 8760 rows, grid 7.25,134.5
+[17:28:11]   wave S 1993: 8760 rows, grid 6.5,134.5
+[17:28:21]   wx koror 1993: 8760 rows, grid 7.25,134.5
+[17:28:30]   wave W 1992: 8784 rows, grid 7.5,134.0
+[17:31:38]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:31:49]   wave E 1992: 8784 rows, grid 7.5,135.0
+[17:34:57]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:35:08]   wave S 1992: 8784 rows, grid 6.5,134.5
+[17:35:17]   wx koror 1992: 8784 rows, grid 7.25,134.5
+[17:35:26]   wave W 1991: 8760 rows, grid 7.5,134.0
+[17:38:35]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:38:46]   wave E 1991: 8760 rows, grid 7.5,135.0
+[17:41:54]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:42:05]   wave S 1991: 8760 rows, grid 6.5,134.5
+[17:42:14]   wx koror 1991: 8760 rows, grid 7.25,134.5
+[17:42:24]   wave W 1990: 8760 rows, grid 7.5,134.0
+[17:45:32]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:45:43]   wave E 1990: 8760 rows, grid 7.5,135.0
+[17:48:51]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:49:02]   wave S 1990: 8760 rows, grid 6.5,134.5
+[17:49:11]   wx koror 1990: 8760 rows, grid 7.25,134.5
+[17:49:21]   wave W 1989: 8760 rows, grid 7.5,134.0
+[17:52:29]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:52:40]   wave E 1989: 8760 rows, grid 7.5,135.0
+[17:55:48]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:55:59]   wave S 1989: 8760 rows, grid 6.5,134.5
+[17:56:09]   wx koror 1989: 8760 rows, grid 7.25,134.5
+[17:56:18]   wave W 1988: 8784 rows, grid 7.5,134.0
+[17:59:26]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:59:37]   wave E 1988: 8784 rows, grid 7.5,135.0
+[18:02:45]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:02:56]   wave S 1988: 8784 rows, grid 6.5,134.5
+[18:03:06]   wx koror 1988: 8784 rows, grid 7.25,134.5
+[18:03:15]   wave W 1987: 8760 rows, grid 7.5,134.0
+[18:06:23]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:06:34]   wave E 1987: 8760 rows, grid 7.5,135.0
+[18:09:42]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:09:53]   wave S 1987: 8760 rows, grid 6.5,134.5
+[18:10:03]   wx koror 1987: 8760 rows, grid 7.25,134.5
+[18:10:12]   wave W 1986: 8760 rows, grid 7.5,134.0
+[18:13:20]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:13:31]   wave E 1986: 8760 rows, grid 7.5,135.0
+[18:16:39]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:16:50]   wave S 1986: 8760 rows, grid 6.5,134.5
+[18:16:59]   wx koror 1986: 8760 rows, grid 7.25,134.5
+[18:17:09]   wave W 1985: 8760 rows, grid 7.5,134.0
+[18:20:17]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:20:28]   wave E 1985: 8760 rows, grid 7.5,135.0
+[18:23:36]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[18:23:47]   wave S 1985: 8760 rows, grid 6.5,134.5
+[21:42:53]   wave W 2026: 6864 rows, grid 7.5,134.0
+[21:46:01]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:46:13]   wave E 2026: 6864 rows, grid 7.5,135.0
+[21:49:21]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:49:32]   wave S 2026: 6864 rows, grid 6.5,134.5
+[21:49:41]   wx koror 2026: 6888 rows, grid 7.25,134.5
+[21:49:50]   wx koror 1985: 8760 rows, grid 7.25,134.5
+[21:49:59]   wave W 1984: 8784 rows, grid 7.5,134.0
+[21:50:08]   wave E 1984: 8784 rows, grid 7.5,135.0
+[21:50:17]   wave S 1984: 8784 rows, grid 6.5,134.5
+[21:50:26]   wx koror 1984: 8784 rows, grid 7.25,134.5
+[21:50:35]   wave W 1983: 8760 rows, grid 7.5,134.0
+[21:50:44]   wave E 1983: 8760 rows, grid 7.5,135.0
+[21:50:54]   wave S 1983: 8760 rows, grid 6.5,134.5
+[21:51:03]   wx koror 1983: 8760 rows, grid 7.25,134.5
+[21:51:57]   wave W 1982: 8760 rows, grid 7.5,134.0
+[21:55:05]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:55:16]   wave E 1982: 8760 rows, grid 7.5,135.0
+[21:58:24]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:58:35]   wave S 1982: 8760 rows, grid 6.5,134.5
+[21:58:44]   wx koror 1982: 8760 rows, grid 7.25,134.5
+[21:58:53]   wave W 1981: 8760 rows, grid 7.5,134.0
+[22:02:01]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[22:02:13]   wave E 1981: 8760 rows, grid 7.5,135.0
+[22:05:21]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[22:05:32]   wave S 1981: 8760 rows, grid 6.5,134.5
+[22:05:41]   wx koror 1981: 8760 rows, grid 7.25,134.5
+[22:05:50]   wave W 1980: 8784 rows, grid 7.5,134.0
+[22:08:58]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[22:09:09]   wave E 1980: 8784 rows, grid 7.5,135.0
+[22:09:18]   wave S 1980: 8784 rows, grid 6.5,134.5
+[22:09:28]   wx koror 1980: 8784 rows, grid 7.25,134.5
+[04:59:02]   wave W 2026: 6888 rows, grid 7.5,134.0
+[05:02:10]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:02:21]   wave E 2026: 6888 rows, grid 7.5,135.0
+[05:05:29]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:05:40]   wave S 2026: 6888 rows, grid 6.5,134.5
+[05:05:49]   wx koror 2026: 6912 rows, grid 7.25,134.5
+[12:00:32]   wave W 2026: 6888 rows, grid 7.5,134.0
+[12:00:41]   wave E 2026: 6888 rows, grid 7.5,135.0
+[12:00:50]   wave S 2026: 6888 rows, grid 6.5,134.5
+[12:01:00]   wx koror 2026: 6912 rows, grid 7.25,134.5
+[17:20:51]   wave W 2026: 6888 rows, grid 7.5,134.0
+[17:24:00]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:24:11]   wave E 2026: 6888 rows, grid 7.5,135.0
+[17:27:19]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:27:30]   wave S 2026: 6888 rows, grid 6.5,134.5
+[17:27:39]   wx koror 2026: 6912 rows, grid 7.25,134.5
+[21:49:10]   wave W 2026: 6888 rows, grid 7.5,134.0
+[21:52:18]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:52:29]   wave E 2026: 6888 rows, grid 7.5,135.0
+[21:55:37]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:55:48]   wave S 2026: 6888 rows, grid 6.5,134.5
+[21:55:57]   wx koror 2026: 6912 rows, grid 7.25,134.5
+[05:00:12]   wave W 2026: 6912 rows, grid 7.5,134.0
+[05:03:21]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:03:32]   wave E 2026: 6912 rows, grid 7.5,135.0
+[05:06:40]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:06:51]   wave S 2026: 6912 rows, grid 6.5,134.5
+[05:07:01]   wx koror 2026: 6936 rows, grid 7.25,134.5
+[12:03:15]   wave W 2026: 6912 rows, grid 7.5,134.0
+[12:06:23]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:06:34]   wave E 2026: 6912 rows, grid 7.5,135.0
+[12:09:42]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[12:09:53]   wave S 2026: 6912 rows, grid 6.5,134.5
+[12:10:02]   wx koror 2026: 6936 rows, grid 7.25,134.5
+[17:18:05]   wave W 2026: 6912 rows, grid 7.5,134.0
+[17:21:13]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:21:25]   wave E 2026: 6912 rows, grid 7.5,135.0
+[17:24:33]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:24:44]   wave S 2026: 6912 rows, grid 6.5,134.5
+[17:24:54]   wx koror 2026: 6936 rows, grid 7.25,134.5
+[21:43:48]   wave W 2026: 6912 rows, grid 7.5,134.0
+[21:43:57]   wave E 2026: 6912 rows, grid 7.5,135.0
+[21:44:06]   wave S 2026: 6912 rows, grid 6.5,134.5
+[21:44:15]   wx koror 2026: 6936 rows, grid 7.25,134.5
+[05:01:32]   wave W 2026: 6936 rows, grid 7.5,134.0
+[05:04:40]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:04:51]   wave E 2026: 6936 rows, grid 7.5,135.0
+[05:07:59]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[05:08:10]   wave S 2026: 6936 rows, grid 6.5,134.5
+[05:08:19]   wx koror 2026: 6960 rows, grid 7.25,134.5
+[11:48:43]   wave W 2026: 6936 rows, grid 7.5,134.0
+[11:51:52]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:52:03]   wave E 2026: 6936 rows, grid 7.5,135.0
+[11:55:11]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[11:55:22]   wave S 2026: 6936 rows, grid 6.5,134.5
+[11:55:32]   wx koror 2026: 6960 rows, grid 7.25,134.5
+[17:15:45]   wave W 2026: 6936 rows, grid 7.5,134.0
+[17:18:53]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:19:04]   wave E 2026: 6936 rows, grid 7.5,135.0
+[17:22:12]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[17:22:23]   wave S 2026: 6936 rows, grid 6.5,134.5
+[17:22:32]   wx koror 2026: 6960 rows, grid 7.25,134.5
+[21:30:18]   wave W 2026: 6936 rows, grid 7.5,134.0
+[21:33:26]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:33:38]   wave E 2026: 6936 rows, grid 7.5,135.0
+[21:36:46]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[21:36:57]   wave S 2026: 6936 rows, grid 6.5,134.5
+[21:37:06]   wx koror 2026: 6960 rows, grid 7.25,134.5
+[04:46:28]   wave W 2026: 6960 rows, grid 7.5,134.0
+[04:49:36]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[04:49:47]   wave E 2026: 6960 rows, grid 7.5,135.0
+[04:52:55]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[04:53:06]   wave S 2026: 6960 rows, grid 6.5,134.5
+[04:53:16]   wx koror 2026: 6984 rows, grid 7.25,134.5
+[11:14:04]   wave W 2026: 6960 rows, grid 7.5,134.0
+[11:14:13]   wave E 2026: 6960 rows, grid 7.5,135.0
+[11:14:22]   wave S 2026: 6960 rows, grid 6.5,134.5
+[11:14:31]   wx koror 2026: 6984 rows, grid 7.25,134.5
+[16:03:30]   wave W 2026: 6960 rows, grid 7.5,134.0
+[16:06:39]   network: <urlopen error _ssl.c:993: The handshake operation timed out>
+[16:06:50]   wave E 2026: 6960 rows, grid 7.5,135.0
+[16:06:59]   wave S 2026: 6960 rows, grid 6.5,134.5
+[16:07:09]   wx koror 2026: 6984 rows, grid 7.25,134.5
