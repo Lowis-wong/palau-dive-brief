@@ -293,3 +293,34 @@ input, select, textarea {
 .hl-c .hl-h { font-size: 12px; color: var(--text-2); }
 .hl-kind { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); white-space: nowrap; }
 .hl-kind .tag { text-transform: none; margin-left: 2px; }
+
+/* next days */
+#outlook summary { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#outlook summary h2::after { content: " ›"; }
+#outlook details[open] summary h2::after { content: " ⌄"; }
+.sum-hint { font-size: 12px; color: var(--muted); }
+.od { border-top: 1px solid var(--line); padding: 10px 0 8px; }
+.od:first-child { border-top: 0; margin-top: 8px; }
+.od-head { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.od-head .moon { width: 18px; height: 18px; flex: 0 0 18px; }
+.od-tag { font-size: 11px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--text-2); }
+.od-sun { margin-left: auto; font-size: 12px; color: var(--text-2); }
+.od-tide { display: block; width: 100%; height: auto; margin-top: 4px; }
+.od-night { fill: var(--slack-soft); }
+.od-area { fill: var(--in-soft); }
+.od-curve { fill: none; stroke: var(--in); stroke-width: 1.6; }
+.od-pt { fill: var(--card); stroke: var(--in); stroke-width: 1.4; }
+.od-lab { font-size: 9.5px; fill: var(--text-2); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--card); stroke-width: 3px; }
+.od-lab.strong { fill: var(--text); font-weight: 700; }
+.od-wx { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 2px; }
+.od-b { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 4px; align-items: center;
+  padding: 4px 6px; border-radius: 8px; background: var(--bg); font-size: 12px; }
+.od-h { grid-row: 1 / 3; font-size: 10px; color: var(--muted); }
+.od-sky { font-size: 16px; line-height: 1.1; }
+.od-w { display: inline-flex; align-items: center; font-weight: 600; white-space: nowrap; }
+.od-w .arr { width: 12px; height: 12px; flex-basis: 12px; }
+.od-r { grid-column: 2; font-size: 10.5px; color: var(--in); }
+.od-foot { margin: 4px 0 0; font-size: 12px; color: var(--text-2); }
+.od-none { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+.ext-links { display: flex; gap: 8px; margin-top: 10px; }
+.ext-links a { text-decoration: none; text-align: center; flex: 1; }

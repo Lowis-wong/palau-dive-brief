@@ -114,7 +114,17 @@ def fetch_weather() -> dict:
         marine = json.loads(get("https://marine-api.open-meteo.com/v1/marine?" + mq))["hourly"]
         fc = json.loads(get("https://api.open-meteo.com/v1/forecast?" + fq))["hourly"]
         zones.append({**z, "marine": marine, "forecast": fc})
-    return {"zones": zones}
+    # Koror (land point) for sky/rain icons and sunrise/sunset in the multi-day outlook
+    kq = urllib.parse.urlencode({
+        "latitude": 7.34, "longitude": 134.48, "timezone": "Pacific/Palau", "forecast_days": 8, "past_days": 1,
+        "hourly": "weather_code,precipitation,precipitation_probability,cloud_cover",
+        "daily": "sunrise,sunset"})
+    try:
+        koror = json.loads(get("https://api.open-meteo.com/v1/forecast?" + kq))
+    except Exception as ex:  # noqa: BLE001
+        print("koror outlook failed:", ex)
+        koror = None
+    return {"zones": zones, "koror": koror}
 
 
 def nws_headlines(text: str) -> list[str]:
@@ -207,6 +217,58 @@ def hourly_table(zones: list[dict], days: list[date]) -> dict:
                              val(m, mi, "wave_height", t, 2)])
             if any(any(v is not None for v in r) for r in rows):
                 out.setdefault(d.isoformat(), {})[z["id"]] = rows
+    return out
+
+
+def outlook(raw: dict, days: list[date]) -> dict:
+    """Per day, four 6-hour blocks of sky/rain (Koror) and wind (west-north zone), plus sun times and
+    max wave heights. For browsing the coming days only; not used in any prediction."""
+    out: dict = {}
+    k = raw.get("koror") or {}
+    kh, kd = k.get("hourly") or {}, k.get("daily") or {}
+    kidx = {t: i for i, t in enumerate(kh.get("time", []))}
+    sun = {t: (kd["sunrise"][i][11:16], kd["sunset"][i][11:16]) for i, t in enumerate(kd.get("time", []))}
+    zone = {z["id"]: z for z in raw["zones"]}
+    wn = zone.get("west-north")
+    fidx = {t: i for i, t in enumerate(wn["forecast"]["time"])} if wn else {}
+
+    def vals(src, idx, key, times):
+        arr = src.get(key) or []
+        return [arr[idx[t]] for t in times if t in idx and idx[t] < len(arr) and arr[idx[t]] is not None]
+
+    for d in days:
+        key = d.isoformat()
+        blocks = []
+        for h0 in (0, 6, 12, 18):
+            times = [f"{key}T{h:02d}:00" for h in range(h0, h0 + 6)]
+            codes = vals(kh, kidx, "weather_code", times)
+            rain = vals(kh, kidx, "precipitation", times)
+            pop = vals(kh, kidx, "precipitation_probability", times)
+            b = {"h": h0, "code": max(codes) if codes else None,
+                 "rain_mm": round(sum(rain), 1) if rain else None, "pop": max(pop) if pop else None}
+            if wn:
+                f = wn["forecast"]
+                spd = vals(f, fidx, "wind_speed_10m", times)
+                gst = vals(f, fidx, "wind_gusts_10m", times)
+                drs = vals(f, fidx, "wind_direction_10m", times)
+                if spd:
+                    import math
+                    u = sum(math.sin(math.radians(x)) for x in drs)
+                    v = sum(math.cos(math.radians(x)) for x in drs)
+                    b.update({"wind_kn": round(sum(spd) / len(spd)), "gust_kn": round(max(gst)) if gst else None,
+                              "wind_dir_deg": round(math.degrees(math.atan2(u, v)) % 360) if drs else None})
+            blocks.append(b)
+        waves = {}
+        for zid in ("west-south", "west-north", "east"):
+            z = zone.get(zid)
+            if z:
+                hs = [x for t, x in zip(z["marine"]["time"], z["marine"].get("wave_height", [])) if t.startswith(key) and x is not None]
+                if hs:
+                    waves[zid] = round(max(hs), 1)
+        if any(b.get("code") is not None or b.get("wind_kn") is not None for b in blocks):
+            out[key] = {"sunrise": sun.get(key, (None, None))[0], "sunset": sun.get(key, (None, None))[1],
+                        "blocks": blocks, "wave_w": max([waves[z] for z in waves if z.startswith("west")], default=None),
+                        "wave_e": waves.get("east")}
     return out
 
 
@@ -381,6 +443,10 @@ def main() -> None:
                 wdays[d.isoformat()] = zs
         weather = {"generated_at": now.strftime("%Y-%m-%d %H:%M"), "days": wdays,
                    "hourly": hourly_table(raw["zones"], days[:8])}
+        try:
+            weather["outlook"] = outlook(raw, days[:9])
+        except Exception as ex:  # noqa: BLE001
+            print("outlook failed:", ex)
 
     # NWS coastal waters text
     nws = prev.get("nws")

@@ -54,7 +54,7 @@ async function load() {
 }
 
 function renderAll() {
-  renderFresh(); renderDays(); renderSummary(); renderChart(); renderSites(); renderWeather(); renderNWS(); renderLogSites(); renderLogs();
+  renderFresh(); renderDays(); renderSummary(); renderChart(); renderSites(); renderWeather(); renderOutlook(); renderNWS(); renderLogSites(); renderLogs();
 }
 
 function renderFresh() {
@@ -329,6 +329,70 @@ function renderNWS() {
   if (n) $("#nws").textContent = `Fetched ${n.fetched_at}\n\n${n.text}`;
 }
 
+/* ---------------------------------------------------------------- next days (browse only) */
+function skyEmoji(code, h) {
+  if (code == null) return "";
+  const night = h === 0 || h === 18;
+  if (code >= 95) return "⛈️";
+  if (code >= 80) return "🌦️";
+  if (code >= 61) return "🌧️";
+  if (code >= 51) return "🌦️";
+  if (code >= 45) return "🌫️";
+  if (code === 3) return "☁️";
+  if (code === 2) return night ? "☁️" : "⛅";
+  if (code === 1) return night ? "🌙" : "🌤️";
+  return night ? "🌙" : "☀️";
+}
+function miniTide(day, lo, hi, sun) {
+  const W = 360, H = 92, L = 4, R = 4, T = 18, B = 18;
+  const x = (m) => L + (m / 1440) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const pts = day.curve_10min;
+  let s = `<svg class="od-tide" viewBox="0 0 ${W} ${H}" aria-hidden="true">`;
+  if (sun?.sunrise && sun?.sunset) {
+    s += `<rect x="${x(0)}" y="${T - 4}" width="${x(tToMin(sun.sunrise)) - x(0)}" height="${H - T - B + 8}" class="od-night"/>`;
+    s += `<rect x="${x(tToMin(sun.sunset))}" y="${T - 4}" width="${x(1440) - x(tToMin(sun.sunset))}" height="${H - T - B + 8}" class="od-night"/>`;
+  }
+  const d = pts.map((v, i) => (v == null ? "" : `${i === 0 ? "M" : "L"}${x(i * 10).toFixed(1)},${y(v).toFixed(1)}`)).join("");
+  const area = d + `L${x(1440)},${H - B + 4}L${x(0)},${H - B + 4}Z`;
+  s += `<path d="${area}" class="od-area"/><path d="${d}" class="od-curve"/>`;
+  for (const e of extremesMarked(day)) {
+    const ex = x(tToMin(e.time)), ey = y(e.h);
+    const tx = Math.min(Math.max(ex, L + 22), W - R - 22);
+    s += `<circle cx="${ex}" cy="${ey}" r="2.6" class="od-pt"/>`;
+    s += `<text x="${tx}" y="${e.kind === "H" ? ey - 6 : ey + 13}" text-anchor="middle" class="od-lab${e.tag ? " strong" : ""}">${e.time} ${e.h.toFixed(1)}m</text>`;
+  }
+  return s + "</svg>";
+}
+function renderOutlook() {
+  const det = $("#outlookDetails");
+  if (!det || !det.open) return; // drawn only when expanded
+  const today = palauNow().date;
+  const start = Math.max(0, brief.days.findIndex((d) => d.date > today));
+  const days = brief.days.slice(start, start + 7);
+  const all = days.flatMap((d) => d.curve_10min.filter((v) => v != null));
+  const lo = Math.min(...all) - 0.1, hi = Math.max(...all) + 0.25;
+  const ol = brief.weather?.outlook || {};
+  const dayName = (iso) => new Date(iso + "T12:00:00+09:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Pacific/Palau" });
+  $("#outlookBody").innerHTML = days.map((d) => {
+    const o = ol[d.date];
+    const blocks = o ? `<div class="od-wx">${o.blocks.map((b) => `<div class="od-b">
+        <span class="od-h num">${String(b.h).padStart(2, "0")}</span>
+        <span class="od-sky">${skyEmoji(b.code, b.h)}</span>
+        <span class="od-w num">${b.wind_kn != null ? `${arrow(b.wind_dir_deg)}${b.wind_kn}<span class="gust">/${b.gust_kn ?? "–"}</span>` : ""}</span>
+        <span class="od-r num">${b.rain_mm >= 0.5 ? `${b.rain_mm.toFixed(b.rain_mm < 10 ? 1 : 0)}mm` : ""}</span>
+      </div>`).join("")}</div>` : `<p class="od-none">Weather forecast not available this far ahead.</p>`;
+    return `<div class="od">
+      <div class="od-head"><b>${esc(dayName(d.date))}</b>${moonIcon(d.moon.age_days)}
+        <span class="od-tag">${esc(d.tide_strength.label)}</span>
+        ${o?.sunrise ? `<span class="od-sun num">☀︎ ${o.sunrise}–${o.sunset}</span>` : ""}</div>
+      ${miniTide(d, lo, hi, o)}
+      ${blocks}
+      ${o && (o.wave_w != null || o.wave_e != null) ? `<p class="od-foot num">Waves W ${o.wave_w ?? "–"}m · E ${o.wave_e ?? "–"}m</p>` : ""}
+    </div>`;
+  }).join("");
+}
+
 /* ---------------------------------------------------------------- dive log */
 function renderLogSites() {
   const sel = $("#logForm select[name=site]");
@@ -435,6 +499,7 @@ function initLogForm() {
 }
 
 /* ---------------------------------------------------------------- boot */
+$("#outlookDetails").addEventListener("toggle", () => { if (brief) renderOutlook(); });
 $("#plan").addEventListener("input", (e) => { planK = +e.target.value; if (brief) { renderSites(); movePlanLine(); } });
 function net() { $("#net").hidden = navigator.onLine; }
 addEventListener("online", () => { net(); load(); });
