@@ -135,6 +135,15 @@ function renderSummary() {
   const east = wz?.find((z) => z.zone === "east");
   const flags = [...d.flags];
   if (east?.wave_max_m >= 1.8) flags.push(`East reef waves to ${east.wave_max_m} m.`);
+  const rain24 = Math.max(0, ...(wz || []).map((z) => z.rain_prev24_mm ?? 0));
+  if (rain24 >= 20) flags.push(`Rain ${Math.round(rain24)} mm in 24 h: murkier outgoing water.`);
+  const pump = d.swell_pump;
+  const pumpRow = pump ? `<div class="pump">
+      <span class="pump-k">West swell pump</span>
+      <span class="pump-meter" aria-hidden="true">${[1, 2, 3].map((i) => `<i class="${i <= pump.level ? "on" : ""}"></i>`).join("")}</span>
+      <span class="pump-v">${esc(pump.label[0].toUpperCase() + pump.label.slice(1))}</span>
+      <span class="pump-s num">${pump.level ? `lagoon ≈ +${pump.typical_lift_cm} cm · ` : ""}W waves ${pump.west_wave_mean_m.toFixed(1)} m avg</span>
+    </div>` : "";
 
   // Only warnings stronger than the near-permanent small craft advisory.
   const nwsFresh = brief.nws && (Date.parse(d.date) - Date.parse(brief.nws.fetched_at.slice(0, 10))) / 864e5 <= 1;
@@ -168,6 +177,7 @@ function renderSummary() {
         <div class="s num">day ${d.moon.age_days} · ${Math.round(d.moon.illumination * 100)}%</div></div>
     </div>
     ${windBox || swellBox ? `<div class="conds">${windBox}${swellBox}</div>` : ""}
+    ${pumpRow}
     ${confRow}
     ${flags.length ? `<ul class="flags">${flags.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}`;
 }
@@ -370,7 +380,8 @@ function snapshot(siteId, date, time) {
   }
   const dz = dayWeather(day)?.find((z) => z.zone === zone);
   if (dz) ctx.rain24_mm = dz.rain_prev24_mm;
-  if (day.confidence) ctx.conf = { level: day.confidence.level, factors: day.confidence.factors || [] };
+  if (day.confidence) ctx.conf = { level: day.confidence.level, score: day.confidence.score, factors: day.confidence.factors || [] };
+  if (day.swell_pump) ctx.pump = { level: day.swell_pump.level, west_mean_m: day.swell_pump.west_wave_mean_m };
   return ctx;
 }
 const cmp = (deg) => (deg == null ? "?" : PTS[Math.round((deg % 360) / 22.5) % 16]);
@@ -385,7 +396,8 @@ function ctxLine(c) {
   if (c.tide) parts.push(`Malakal ${c.tide.stage} ${c.tide.h_since} h after ${c.tide.since}, ${c.tide.h_to_next} h to turn, range ${c.tide.range_m} m, ${c.tide.label} x${c.tide.ratio}, rate ${c.tide.rate_cm_h ?? "?"} cm/h`);
   if (c.wx) parts.push(`${c.wx.zone} fcst ${c.wx.issued}: swell ${c.wx.swell_m ?? "?"} m ${cmp(c.wx.swell_dir)} ${c.wx.swell_s ?? "?"} s, waves ${c.wx.wave_m ?? "?"} m, wind ${cmp(c.wx.wind_dir)} ${c.wx.wind_kn ?? "?"} kn g${c.wx.gust_kn ?? "?"}`);
   if (c.rain24_mm != null) parts.push(`rain24 ${c.rain24_mm} mm`);
-  if (c.conf) parts.push(`conf ${c.conf.level}${c.conf.factors.length ? ` (${c.conf.factors.join(", ")})` : ""}`);
+  if (c.pump) parts.push(`pump ${c.pump.level}/3 (W mean ${c.pump.west_mean_m} m)`);
+  if (c.conf) parts.push(`conf ${c.conf.score ?? ""}/10 ${c.conf.level}${c.conf.factors.length ? ` (${c.conf.factors.join(", ")})` : ""}`);
   return "   " + parts.join(" | ");
 }
 function renderLogs() {

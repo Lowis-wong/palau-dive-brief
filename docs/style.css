@@ -273,3 +273,13 @@ input, select, textarea {
 .hl { display: grid; grid-template-columns: 40px 1fr 1fr; gap: 8px; align-items: baseline; }
 .hl-e { min-width: 0; }
 .chip { font-size: 11.5px; padding: 2px 7px; }
+
+/* west swell pump row */
+.pump { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 12px; padding: 8px 10px;
+  border-radius: 10px; background: var(--bg); font-size: 13px; }
+.pump-k { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.pump-meter { display: inline-flex; gap: 2px; }
+.pump-meter i { width: 12px; height: 6px; border-radius: 2px; background: var(--grid); }
+.pump-meter i.on { background: var(--text); }
+.pump-v { font-weight: 700; }
+.pump-s { color: var(--text-2); font-size: 12px; margin-left: auto; }

@@ -160,9 +160,13 @@ def summarize_zone(z: dict, day: date) -> dict | None:
     rain_idx = [i for i, t in enumerate(f["time"])
                 if t6 - timedelta(hours=24) <= datetime.strptime(t, "%Y-%m-%dT%H:%M") < t6]
     rain = [f["precipitation"][i] for i in rain_idx if f["precipitation"][i] is not None]
+    # daily (00-23 h) mean wave height: the measure the Step 2 lagoon analysis was done with
+    day_idx = [i for i, t in enumerate(m["time"]) if t.startswith(key)]
+    wv = [m["wave_height"][i] for i in day_idx if m.get("wave_height") and m["wave_height"][i] is not None]
     return {
         "zone": z["id"], "name": z["name"],
         "wave_max_m": mx(m.get("wave_height", []), idx_m),
+        "wave_mean_m": round(sum(wv) / len(wv), 2) if len(wv) >= 18 else None,
         "swell_max_m": mx(m.get("swell_wave_height", []), idx_m),
         "swell_dir_deg": at_peak(m.get("swell_wave_direction", []), m.get("swell_wave_height", []), idx_m),
         "wind_dir_deg": at_peak(f.get("wind_direction_10m", []), f.get("wind_speed_10m", []), idx_f),
@@ -207,53 +211,50 @@ def hourly_table(zones: list[dict], days: list[date]) -> dict:
 
 
 # ----------------------------------------------------------------------------- confidence
+# West-swell pumping of the lagoon, from the Step 2 analysis (Malakal 1980-2026, ERA5 west point):
+# mean set-up by DAILY MEAN west wave height: <2 m ~0, 2-2.5 m +0.7 cm, 2.5-3 m +1.7 cm, >=3 m +2.8 cm.
+PUMP_LEVELS = [(3.0, "strong", 3, 2.8), (2.5, "moderate", 2, 1.7), (2.0, "weak", 1, 0.7)]
+
+
+def swell_pump(zones: list[dict] | None) -> dict | None:
+    if not zones:
+        return None
+    west = [z.get("wave_mean_m") for z in zones if z["zone"].startswith("west") and z.get("wave_mean_m") is not None]
+    if not west:
+        return None
+    h = max(west)
+    for lim, name, level, lift in PUMP_LEVELS:
+        if h >= lim:
+            return {"level": level, "label": name, "west_wave_mean_m": h, "typical_lift_cm": lift}
+    return {"level": 0, "label": "none", "west_wave_mean_m": h, "typical_lift_cm": 0.0}
+
+
 def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
     """Score 1-10 for how far to trust the tide-only prediction today (rule-based until calibrated).
 
-    The tide drives channel flow through the lagoon/ocean level difference. Swell pumping
-    water over the reef crest, wind on the surface layer and rain runoff all change that
-    difference; they matter most when the tide itself is weak (neap). Start at 10 and subtract:
-      tide     ratio <0.7: -3 | <0.85: -2 | <1.15: -1 | spring: 0
-      swell    W swell >=1.6 m or waves >=2.0 m: -3 | >=1.2 / >=1.5: -2 | >=0.8 / >=1.0: -1
-      wind     W wind >=20 kn: -2 | >=15 kn: -1
-      rain     24 h >=40 mm: -2 | >=20 mm: -1
-      swell penalty +1 at neap (weak tide is easier to overpower)
-    Level: 8-10 high, 5-7 medium, 1-4 low."""
+    Start at 10 and subtract:
+      tide         ratio <0.7: -3 | <0.85: -2 | <1.15: -1 | spring: 0
+      swell pump   daily mean west waves >=3 m: -3 | >=2.5 m: -2 | >=2 m: -1   (+1 more at neap)
+    Pressure, wind and rain are not scored: Step 2 found pressure lifts lagoon and ocean together,
+    and wind/rain had no measurable effect on lagoon level. Level: 8-10 high, 5-7 medium, 1-4 low."""
     ratio = day["tide_strength"]["ratio"]
     factors: list[str] = []
     breakdown: dict[str, int] = {}
     score = 10
     tide_pen = 3 if ratio < 0.7 else 2 if ratio < 0.85 else 1 if ratio < 1.15 else 0
     if tide_pen:
-        label = "Neap" if ratio < 0.85 else "Mid tide"
-        factors.append(label)
+        factors.append("Neap" if ratio < 0.85 else "Mid tide")
         breakdown["tide"] = -tide_pen
         score -= tide_pen
-    if not zones:
-        return {"score": max(1, score), "level": "unknown", "factors": factors + ["no weather"], "breakdown": breakdown, "tide_only": True}
-    west = [z for z in zones if z["zone"].startswith("west")]
-    swell = max((z["swell_max_m"] or 0) for z in west) if west else 0
-    wave = max((z["wave_max_m"] or 0) for z in west) if west else 0
-    wind = max((z["wind_max_kn"] or 0) for z in west) if west else 0
-    rain = max((z["rain_prev24_mm"] or 0) for z in zones)
-    sw_pen = 3 if (swell >= 1.6 or wave >= 2.0) else 2 if (swell >= 1.2 or wave >= 1.5) else 1 if (swell >= 0.8 or wave >= 1.0) else 0
-    if sw_pen:
-        what = f"Swell {swell} m" if swell >= {3: 1.6, 2: 1.2, 1: 0.8}[sw_pen] else f"Waves {wave} m"
-        if ratio < 0.85:
-            sw_pen += 1  # a weak tide is easier for swell pumping to overpower
-        factors.append(what)
-        breakdown["swell"] = -sw_pen
-        score -= sw_pen
-    wd_pen = 2 if wind >= 20 else 1 if wind >= 15 else 0
-    if wd_pen:
-        factors.append(f"Wind {round(wind)} kn")
-        breakdown["wind"] = -wd_pen
-        score -= wd_pen
-    rn_pen = 2 if rain >= 40 else 1 if rain >= 20 else 0
-    if rn_pen:
-        factors.append(f"Rain {round(rain)} mm")
-        breakdown["rain"] = -rn_pen
-        score -= rn_pen
+    pump = swell_pump(zones)
+    if pump is None:
+        return {"score": max(1, score), "level": "unknown", "factors": factors + ["no weather"],
+                "breakdown": breakdown, "tide_only": True}
+    if pump["level"]:
+        pen = pump["level"] + (1 if ratio < 0.85 else 0)
+        factors.append(f"West waves {pump['west_wave_mean_m']:.1f} m")
+        breakdown["swell_pump"] = -pen
+        score -= pen
     score = max(1, min(10, score))
     level = "high" if score >= 8 else "medium" if score >= 5 else "low"
     return {"score": score, "level": level, "factors": factors, "breakdown": breakdown}
@@ -397,7 +398,9 @@ def main() -> None:
         nws = {"fetched_at": now.strftime("%Y-%m-%d %H:%M"), "text": t, "headlines": nws_headlines(t)}
 
     for d in out_days:
-        d["confidence"] = assess_confidence(d, (weather or {}).get("days", {}).get(d["date"]))
+        zs = (weather or {}).get("days", {}).get(d["date"])
+        d["confidence"] = assess_confidence(d, zs)
+        d["swell_pump"] = swell_pump(zs)
 
     site_meta = [{k: s.get(k) for k in ("id", "name", "type", "exposure", "zone", "lag_min", "strength_factor", "incoming", "outgoing",
                                      "slack", "hazards", "confidence", "n_logs")} for s in site_cfg]
