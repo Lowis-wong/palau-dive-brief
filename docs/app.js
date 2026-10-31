@@ -118,7 +118,6 @@ function dial(fromDeg, label) {
   return `<svg class="dial" viewBox="0 0 64 64" role="img" aria-label="${esc(label)}">
     <circle cx="32" cy="32" r="27" class="ring"/>
     ${[0, 90, 180, 270].map((a) => `<line class="tick" x1="32" y1="5" x2="32" y2="10" transform="rotate(${a} 32 32)"/>`).join("")}
-    <text x="32" y="17" class="n" text-anchor="middle">N</text>
     <g transform="rotate(${rot} 32 32)">
       <line x1="32" y1="52" x2="32" y2="18" class="shaft"/>
       <path d="M32 12 L38.5 22 L32 19.5 L25.5 22 Z" class="head"/>
@@ -142,7 +141,7 @@ function renderSummary() {
       <span class="pump-k">West swell pump</span>
       <span class="pump-meter" aria-hidden="true">${[1, 2, 3].map((i) => `<i class="${i <= pump.level ? "on" : ""}"></i>`).join("")}</span>
       <span class="pump-v">${esc(pump.label[0].toUpperCase() + pump.label.slice(1))}</span>
-      <span class="pump-s num">${pump.level ? `lagoon ≈ +${pump.typical_lift_cm} cm · ` : ""}W waves ${pump.west_wave_mean_m.toFixed(1)} m avg</span>
+      <span class="pump-s num">W waves ${pump.west_wave_mean_m.toFixed(1)}m${pump.level ? ` · lagoon ≈ +${pump.typical_lift_cm} cm` : ""}</span>
     </div>` : "";
 
   // Only warnings stronger than the near-permanent small craft advisory.
@@ -170,8 +169,7 @@ function renderSummary() {
     <div class="stats">
       <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}${meter(tideLevel(ts.ratio))}</div>
         <div class="s num">range ${ts.max_range_m ?? "–"} m</div></div>
-      <div class="stat"><div class="k">Flow</div><div class="v num">${d.flow_level ?? "–"}<small style="font-size:13px;color:var(--muted)">/5</small>${meter(d.flow_level || 0)}</div>
-        <div class="s">peak at Malakal</div></div>
+      <div class="stat"><div class="k">Flow</div><div class="v num">${d.flow_level ?? "–"}<small style="font-size:13px;color:var(--muted)">/5</small>${meter(d.flow_level || 0)}</div></div>
       <div class="stat"><div class="k">Moon</div>
         <div class="moonrow">${moonIcon(d.moon.age_days)}<div class="v moon-name">${esc(d.moon.phase)}</div></div>
         <div class="s num">day ${d.moon.age_days} · ${Math.round(d.moon.illumination * 100)}%</div></div>
@@ -266,13 +264,13 @@ function extremesMarked(d) {
   return ev;
 }
 function renderEvents(marks) {
-  const row = (kind, label) => {
-    const es = marks.filter((e) => e.kind === kind);
-    if (!es.length) return "";
-    return `<div class="hl"><span class="hl-k">${label}</span>${es.map((e) =>
-      `<span class="hl-e${e.tag ? " tagged" : ""}"><span class="num">${e.time}</span> <span class="num hl-h">${e.h.toFixed(2)} m</span>${e.tag ? `<i class="tag ${e.tag}">${e.tag}</i>` : ""}</span>`).join("")}</div>`;
-  };
-  $("#events").innerHTML = row("H", "High") + row("L", "Low");
+  // chronological, each turn labelled High/Low; the day's higher high and lower low are flagged
+  $("#events").innerHTML = `<div class="hl4">${marks.map((e) => `
+    <div class="hl-c ${e.kind === "H" ? "is-h" : "is-l"}${e.tag ? " tagged" : ""}">
+      <span class="hl-t num">${e.time}</span>
+      <span class="hl-h num">${e.h.toFixed(2)} m</span>
+      <span class="hl-kind">${e.kind === "H" ? "High" : "Low"}${e.tag ? ` <i class="tag ${e.tag}">${e.tag}</i>` : ""}</span>
+    </div>`).join("")}</div>`;
 }
 
 /* ---------------------------------------------------------------- sites */

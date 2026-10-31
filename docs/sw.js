@@ -1,5 +1,5 @@
 /* Offline support: app shell cache-first, brief.json network-first with cache fallback. */
-const VERSION = "pdb-v7";
+const VERSION = "pdb-v8";
 const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

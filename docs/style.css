@@ -283,3 +283,13 @@ input, select, textarea {
 .pump-meter i.on { background: var(--text); }
 .pump-v { font-weight: 700; }
 .pump-s { color: var(--text-2); font-size: 12px; margin-left: auto; }
+
+/* round 5 */
+.pump { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 4px 8px; }
+.pump-s { grid-column: 1 / -1; margin-left: 0; }
+.hl4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.hl-c { display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 10px; background: var(--bg); }
+.hl-t { font-size: 15px; font-weight: 700; color: var(--text); }
+.hl-c .hl-h { font-size: 12px; color: var(--text-2); }
+.hl-kind { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); white-space: nowrap; }
+.hl-kind .tag { text-transform: none; margin-left: 2px; }
