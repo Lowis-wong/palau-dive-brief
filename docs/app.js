@@ -334,9 +334,9 @@ function skyEmoji(code, h) {
   if (code == null) return "";
   const night = h === 0 || h === 18;
   if (code >= 95) return "⛈️";
-  if (code >= 80) return "🌦️";
+  if (code >= 80) return night ? "🌧️" : "🌦️";
   if (code >= 61) return "🌧️";
-  if (code >= 51) return "🌦️";
+  if (code >= 51) return night ? "🌧️" : "🌦️";
   if (code >= 45) return "🌫️";
   if (code === 3) return "☁️";
   if (code === 2) return night ? "☁️" : "⛅";
@@ -388,7 +388,7 @@ function renderOutlook() {
         ${o?.sunrise ? `<span class="od-sun num">☀︎ ${o.sunrise}–${o.sunset}</span>` : ""}</div>
       ${miniTide(d, lo, hi, o)}
       ${blocks}
-      ${o && (o.wave_w != null || o.wave_e != null) ? `<p class="od-foot num">Waves W ${o.wave_w ?? "–"}m · E ${o.wave_e ?? "–"}m</p>` : ""}
+      ${o && (o.wave_w != null || o.wave_e != null) ? `<p class="od-foot num">Waves W ${o.wave_w != null ? o.wave_w.toFixed(1) : "–"}m · E ${o.wave_e != null ? o.wave_e.toFixed(1) : "–"}m</p>` : ""}
     </div>`;
   }).join("");
 }
