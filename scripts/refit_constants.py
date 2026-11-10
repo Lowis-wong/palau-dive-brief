@@ -37,6 +37,22 @@ def main() -> None:
     src = {"fast": fast}
     ioc_h = S1.ioc_hourly(ioc_wide) if ioc_wide is not None else None
     wl, _ = S1.merge_water_level(src, ioc_h)
+    # QC against the current constants: real-time sensors can jump (datum change, maintenance).
+    # Drop hours whose residual departs > 0.5 m from the typical residual of the quality-controlled
+    # (UHSLC) period. Slow weather/ENSO changes are far smaller than that.
+    if old:
+        cs = [(np.deg2rad(k["speed_deg_h"]), k["a"], k["b"]) for k in old["constituents"]]
+        tt = th(wl.index)
+        pred_old = old["mean"] + sum(a * np.cos(w * tt) + b * np.sin(w * tt) for w, a, b in cs)
+        res_old = wl - pred_old
+        ref = res_old[: fast.last_valid_index()].dropna()
+        base = float(ref[-24 * 60:].median()) if len(ref) else float(res_old.median())
+        bad = (res_old - base).abs() > 0.5
+        rep["checks"]["qc_dropped_hours"] = int(bad.sum())
+        if bad.any():
+            rep["checks"]["qc_first_bad_utc"] = str(bad[bad].index[0])
+            rep["checks"]["qc_last_bad_utc"] = str(bad[bad].index[-1])
+        wl = wl.mask(bad)
     end = wl.last_valid_index()
     win = wl[end - pd.Timedelta(days=365):end]
     cov = float(win.notna().mean())
