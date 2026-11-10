@@ -89,4 +89,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as ex:  # noqa: BLE001
+        import traceback
+        REPORT.write_text(json.dumps({"run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                                      "replaced": False, "error": f"{type(ex).__name__}: {ex}",
+                                      "traceback": traceback.format_exc()[-3000:]}, indent=1))
+        print(traceback.format_exc())
+        sys.exit(1)
