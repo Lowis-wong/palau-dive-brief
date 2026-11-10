@@ -59,7 +59,8 @@ def main() -> None:
     ours = pd.Series(H.predict(th(noaa.index), m), index=noaa.index)
     mllw = float((noaa - ours).mean())
     # timing vs NOAA: best shift (expected: ours ~15-18 min earlier)
-    o6 = ours.resample("6min").interpolate("cubic")
+    idx6 = pd.date_range(noaa.index[0] - pd.Timedelta(hours=2), noaa.index[-1] + pd.Timedelta(hours=2), freq="6min")
+    o6 = pd.Series(H.predict(th(idx6), m), index=idx6)  # exact 6-min prediction, no interpolation needed
     best = min(((L, float((noaa - mllw - o6.shift(freq=f"{L}min").reindex(noaa.index)).std())) for L in range(-60, 61, 3)),
                key=lambda x: x[1])
     rep["checks"]["shift_to_match_noaa_min"] = best[0]
