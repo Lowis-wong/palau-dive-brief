@@ -1,6 +1,19 @@
 {
- "run_utc": "2026-11-10 08:50",
+ "run_utc": "2026-11-10 08:51",
  "replaced": false,
- "error": "ImportError: `Import scipy` failed. cubic interpolation requires SciPy. Use pip, conda, or your preferred package management tool to install the scipy package.",
- "traceback": " call last):\n  File \"/home/runner/work/palau-dive-brief/palau-dive-brief/scripts/refit_constants.py\", line 93, in <module>\n    main()\n  File \"/home/runner/work/palau-dive-brief/palau-dive-brief/scripts/refit_constants.py\", line 62, in main\n    o6 = ours.resample(\"6min\").interpolate(\"cubic\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/resample.py\", line 1038, in interpolate\n    result_interpolated = result.interpolate(\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/generic.py\", line 8398, in interpolate\n    new_data = obj._mgr.interpolate(\n               ^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/internals/managers.py\", line 552, in interpolate\n    return self.apply(\"interpolate\", inplace=inplace, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/internals/managers.py\", line 456, in apply\n    applied = getattr(b, f)(**kwargs)\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/internals/blocks.py\", line 1531, in interpolate\n    new_values = self.array_values.interpolate(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/arrays/numpy_.py\", line 410, in interpolate\n    missing.interpolate_2d_inplace(\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/missing.py\", line 433, in interpolate_2d_inplace\n    np.apply_along_axis(func, axis, data)\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/numpy/lib/_shape_base_impl.py\", line 388, in apply_along_axis\n    res = asanyarray(func1d(inarr_view[ind0], *args, **kwargs))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/missing.py\", line 420, in func\n    _interpolate_1d(\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/missing.py\", line 574, in _interpolate_1d\n    yvalues[invalid] = _interpolate_scipy_wrapper(\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/core/missing.py\", line 611, in _interpolate_scipy_wrapper\n    import_optional_dependency(\"scipy\", extra=extra)\n  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/site-packages/pandas/compat/_optional.py\", line 161, in import_optional_dependency\n    raise ImportError(msg) from err\nImportError: `Import scipy` failed. cubic interpolation requires SciPy. Use pip, conda, or your preferred package management tool to install the scipy package.\n"
+ "checks": {
+  "coverage": 0.992,
+  "resid_rms_m": 0.5828,
+  "shift_to_match_noaa_min": 12,
+  "M2": [
+   0.4974,
+   164.43
+  ],
+  "M2_change": [
+   0.011,
+   0.24
+  ]
+ },
+ "fit_end_utc": "2026-11-10 08:00:00",
+ "passed": false
 }
