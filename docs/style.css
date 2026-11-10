@@ -324,3 +324,5 @@ input, select, textarea {
 .od-none { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 .ext-links { display: flex; gap: 8px; margin-top: 10px; }
 .ext-links a { text-decoration: none; text-align: center; flex: 1; }
+
+.hl-tab { font-size: 10.5px; color: var(--muted); white-space: nowrap; }

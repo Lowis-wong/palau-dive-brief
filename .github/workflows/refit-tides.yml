@@ -1,0 +1,41 @@
+name: Refit tide constants (monthly)
+
+on:
+  schedule:
+    - cron: "37 3 3 * *"   # 3rd of each month, 12:37 Palau
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "scripts/refit_constants.py"
+      - ".github/workflows/refit-tides.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refit-tides
+  cancel-in-progress: false
+
+jobs:
+  refit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas
+      - run: python scripts/refit_constants.py
+      - name: Commit if changed
+        run: |
+          git config user.name "dive-brief-bot"
+          git config user.email "dive-brief-bot@users.noreply.github.com"
+          git add data/tide_constants.json data/tide_constants_report.json
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -q -m "Monthly tide constants refit"
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && exit 0; sleep 10; done
+          exit 1

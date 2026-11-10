@@ -270,6 +270,7 @@ function renderEvents(marks) {
       <span class="hl-t num">${e.time}</span>
       <span class="hl-h num">${e.h.toFixed(2)} m</span>
       <span class="hl-kind">${e.kind === "H" ? "High" : "Low"}${e.tag ? ` <i class="tag ${e.tag}">${e.tag}</i>` : ""}</span>
+      ${e.table && e.table !== e.time ? `<span class="hl-tab num">tables ${e.table}</span>` : ""}
     </div>`).join("")}</div>`;
 }
 

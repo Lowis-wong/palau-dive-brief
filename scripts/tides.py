@@ -175,3 +175,45 @@ def tide_strength_label(ratio: float) -> str:
     if ratio <= 0.85:
         return "Neap"
     return "Mid"
+
+
+# ----------------------------------------------------------------------------- own harmonic constants
+def load_constants(path) -> dict | None:
+    import json
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists():
+        return None
+    c = json.loads(p.read_text())
+    return c if c.get("constituents") else None
+
+
+def predict_series(consts: dict, start_utc: datetime, end_utc: datetime, step_min: int = 6) -> list[tuple[datetime, float]]:
+    """Water level (m, NOAA MLLW datum) every step_min minutes, timestamps in UTC (naive)."""
+    epoch = datetime.fromisoformat(consts["epoch_utc"])
+    cs = [(math.radians(k["speed_deg_h"]), k["a"], k["b"]) for k in consts["constituents"]]
+    base = consts["mean"] + consts.get("mllw_offset_m", 0.0)
+    out = []
+    t = start_utc
+    step = timedelta(minutes=step_min)
+    while t <= end_utc:
+        th = (t - epoch).total_seconds() / 3600.0
+        out.append((t, base + sum(a * math.cos(w * th) + b * math.sin(w * th) for w, a, b in cs)))
+        t += step
+    return out
+
+
+def find_extremes(series: list[tuple[datetime, float]]) -> list[Extreme]:
+    """Local highs/lows of a regular series, refined by a parabola through the three samples."""
+    out = []
+    for i in range(1, len(series) - 1):
+        (t0, h0), (t1, h1), (t2, h2) = series[i - 1], series[i], series[i + 1]
+        if (h1 > h0 and h1 >= h2) or (h1 < h0 and h1 <= h2):
+            den = h0 - 2 * h1 + h2
+            off = 0.5 * (h0 - h2) / den if den else 0.0  # in steps, -0.5..0.5
+            step_s = (t2 - t1).total_seconds()
+            t = t1 + timedelta(seconds=off * step_s)
+            h = h1 - 0.25 * (h0 - h2) * off
+            out.append(Extreme(t.replace(second=0, microsecond=0) + timedelta(minutes=1 if t.second >= 30 else 0),
+                               h, "H" if h1 > h0 else "L"))
+    return out

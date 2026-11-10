@@ -29,6 +29,7 @@ import tides  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "data" / "brief.json"
 SITES = ROOT / "data" / "sites.json"
+CONSTANTS = ROOT / "data" / "tide_constants.json"
 PALAU = timezone(timedelta(hours=9))
 STATION = "1841367"
 DAYS_AHEAD = 35
@@ -332,7 +333,8 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
 def build_day(curve: tides.TideCurve, ext: list[tides.Extreme], sites: list[dict], day: date,
               mean_max_range: float, low_cut: float) -> dict:
     d0 = datetime.combine(day, datetime.min.time())
-    events = [{"time": e.t.strftime("%H:%M"), "kind": e.kind, "h": round(e.h, 2)}
+    events = [{"time": e.t.strftime("%H:%M"), "kind": e.kind, "h": round(e.h, 2),
+               **({"table": e.noaa_t.strftime("%H:%M")} if getattr(e, "noaa_t", None) else {})}
               for e in ext if e.t.date() == day]
     ranges = tides.day_ranges(ext, day)
     ratio = (max(ranges) / mean_max_range) if ranges and mean_max_range else 1.0
@@ -399,20 +401,42 @@ def main() -> None:
         series = json.loads(sp.read_text()) if sp.exists() else None
         status["tides"] = "fixture"
     else:
-        try:
-            hilo, series = fetch_tides(start, end)
-            status["tides"] = "ok" if series else "ok (hi/lo reconstruction)"
+        hilo = series = None
+        consts = tides.load_constants(CONSTANTS)
+        if consts:
+            # Own constants fitted to Malakal observations (Project 2): NOAA predictions run ~15-18 min late.
+            s0 = datetime.combine(start - timedelta(days=1), datetime.min.time()) - timedelta(hours=9)
+            s1 = datetime.combine(end + timedelta(days=2), datetime.min.time()) - timedelta(hours=9)
+            ser_utc = tides.predict_series(consts, s0, s1, 6)
+            series = [{"t": (t + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M"), "v": round(v, 4)} for t, v in ser_utc]
+            ext_own = tides.find_extremes([(t + timedelta(hours=9), v) for t, v in ser_utc])
+            hilo = [{"t": e.t.strftime("%Y-%m-%d %H:%M"), "v": round(e.h, 3), "type": e.kind} for e in ext_own]
+            status["tides"] = f"own constants (fit {consts['fit_start_utc'][:10]}..{consts['fit_end_utc'][:10]})"
+        try:  # NOAA: reference "table" times, and the fallback if the constants are missing
+            n_hilo, n_series = fetch_tides(start, end)
+            noaa_ext = tides.parse_hilo(n_hilo)
+            if hilo is None:
+                hilo, series = n_hilo, n_series
+                status["tides"] = "NOAA (fallback)" if n_series else "NOAA hi/lo reconstruction (fallback)"
         except Exception as ex:  # noqa: BLE001
-            print("TIDES FAILED:", ex)
-            if not prev:
-                raise
-            prev.setdefault("status", {})["tides"] = f"stale: {ex}"
-            OUT.write_text(json.dumps(prev, separators=(",", ":")))
-            return
+            print("NOAA tides failed:", ex)
+            noaa_ext = []
+            if hilo is None:
+                if not prev:
+                    raise
+                prev.setdefault("status", {})["tides"] = f"stale: {ex}"
+                OUT.write_text(json.dumps(prev, separators=(",", ":")))
+                return
 
     ext = tides.parse_hilo(hilo)
     ser = [(datetime.strptime(r["t"], "%Y-%m-%d %H:%M"), float(r["v"])) for r in series] if series else None
     curve = tides.TideCurve(ext, ser)
+    if not args.fixtures:
+        # attach the matching NOAA table time to each of our highs/lows (for talking to captains / other apps)
+        for e in ext:
+            same = [n for n in noaa_ext if n.kind == e.kind and abs((n.t - e.t).total_seconds()) < 3 * 3600]
+            if same:
+                e.noaa_t = min(same, key=lambda n: abs((n.t - e.t).total_seconds())).t
     last_day = min(end, (ext[-1].t - timedelta(hours=1)).date())
 
     # reference statistics across the window
