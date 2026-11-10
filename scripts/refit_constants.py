@@ -46,6 +46,16 @@ def main() -> None:
     m = H.fit(th(win.index), win.to_numpy(), names)
     resid = win.to_numpy() - H.predict(th(win.index), m)
     rep["checks"]["resid_rms_m"] = round(float(np.nanstd(resid)), 4)
+    r = pd.Series(resid, index=win.index)
+    rep["diag"] = {
+        "resid_rms_by_month_cm": {str(k)[:7]: round(float(v) * 100, 1) for k, v in r.resample("MS").std().items()},
+        "resid_mean_by_month_cm": {str(k)[:7]: round(float(v) * 100, 1) for k, v in r.resample("MS").mean().items()},
+        "source_offsets": S1.SUMMARY.get("checks", {}).get("source_offsets"),
+        "ioc_sensor_used": S1.SUMMARY.get("checks", {}).get("ioc_sensor_used"),
+        "fast_last": str(fast.last_valid_index()), "fast_n": int(fast.notna().sum()),
+        "erddap_records": S1.SUMMARY.get("sources", {}).get("erddap_global_hourly_fast_records"),
+        "wl_min_max": [round(float(win.min()), 3), round(float(win.max()), 3)],
+    }
 
     # datum: keep NOAA MLLW offset consistent by matching the mean of NOAA hourly predictions over the window
     import urllib.parse
