@@ -1,0 +1,63 @@
+name: Analysis project 1 (ocean tide models)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "scripts/analysis_tides/**"
+      - ".github/workflows/analysis-tides.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analysis-tides
+  cancel-in-progress: true
+
+jobs:
+  tides:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas netCDF4 xarray scipy pyTMD
+      - name: Download tide models
+        run: |
+          M="$RUNNER_TEMP/tide_models"; mkdir -p "$M" && cd "$M"
+          # EOT20 (about 2 GB zip that contains ocean_tides.zip)
+          if curl -fsSL --retry 3 -o eot20.zip "https://www.seanoe.org/data/00683/79489/data/85762.zip"; then
+            unzip -q -o eot20.zip -d eot20_raw || true
+            rm -f eot20.zip
+            OZ=$(find eot20_raw -name "ocean_tides.zip" | head -1)
+            mkdir -p EOT20
+            if [ -n "$OZ" ]; then unzip -q -o "$OZ" -d EOT20 || true; fi
+            rm -rf eot20_raw
+          else
+            echo "EOT20 download failed"
+          fi
+          # GOT4.10c and GOT5.6 (GOT5.6 also needs the GOT5.5 files)
+          for u in "https://earth.gsfc.nasa.gov/sites/default/files/2023-12/got4.10c.tar.gz" \
+                   "https://earth.gsfc.nasa.gov/sites/default/files/2024-07/GOT5.5.tar.gz" \
+                   "https://earth.gsfc.nasa.gov/sites/default/files/2024-07/GOT5.6.tar%201.gz"; do
+            if curl -fsSL --retry 3 -o m.tgz "$u"; then tar -xzf m.tgz || echo "untar failed $u"; rm -f m.tgz; else echo "failed $u"; fi
+          done
+          find . -maxdepth 3 -type d | head -40
+          du -sh .
+      - name: Predict open-ocean tides
+        run: python scripts/analysis_tides/ocean_tides.py "$RUNNER_TEMP/out/tides" "$RUNNER_TEMP/tide_models"
+      - name: Publish to analysis-data branch (keeps the step1 files)
+        if: always()
+        run: |
+          git clone -q --depth 1 --branch analysis-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/pub" || exit 0
+          mkdir -p "$RUNNER_TEMP/out/tides"
+          (cd "$RUNNER_TEMP/tide_models" 2>/dev/null && find . -maxdepth 4 | head -300) > "$RUNNER_TEMP/out/tides/model_tree.txt" || true
+          cd "$RUNNER_TEMP/pub" && rm -rf tides && cp -r "$RUNNER_TEMP/out/tides" tides
+          git add -A
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "Ocean tide model predictions (run ${{ github.run_id }})" || exit 0
+          git push -q origin analysis-data
