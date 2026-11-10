@@ -59,7 +59,7 @@
       "lon": 134.243,
       "exposure": "west outer reef / lagoon pass",
       "zone": "west-north",
-      "lag_min": 45,
+      "lag_min": 0,
       "strength_factor": 1.2,
       "incoming": {
         "entry": "Enter at the outer channel mouth (~20 m), hook in at the sandy run-off to watch sharks, then unhook and drift into the channel toward the lagoon.",
@@ -72,7 +72,8 @@
       "slack": "Current may reverse mid-dive near the turn. If it reverses, turn and go with it.",
       "hazards": "Strong, changing currents. Titan triggerfish nests in season.",
       "confidence": "unverified",
-      "n_logs": 0
+      "n_logs": 0,
+      "lag_note": "Set to 0 on 2026-11-10 (was +45 guess). Project 1: lagoon-ocean head reverses ~35-40 min before Malakal HW/LW; flow inertia delays the turn, so the turn is expected near Malakal HW/LW. Unverified."
     },
     {
       "id": "german-channel",
@@ -82,7 +83,7 @@
       "lon": 134.265,
       "exposure": "southwest outer reef / lagoon pass",
       "zone": "west-south",
-      "lag_min": 45,
+      "lag_min": 0,
       "strength_factor": 1.0,
       "incoming": {
         "entry": "Start at the southern (outer) mooring and drift into the channel toward the lagoon, past the manta cleaning station at 18-20 m. Finish at the northern mooring.",
@@ -95,7 +96,8 @@
       "slack": "Good for waiting at the cleaning station.",
       "hazards": "Boat traffic in the channel; shallow, fast water inside.",
       "confidence": "unverified",
-      "n_logs": 0
+      "n_logs": 0,
+      "lag_note": "Set to 0 on 2026-11-10 (was +45 guess). Project 1: lagoon-ocean head reverses ~35-40 min before Malakal HW/LW; flow inertia delays the turn, so the turn is expected near Malakal HW/LW. Unverified."
     }
   ]
 }

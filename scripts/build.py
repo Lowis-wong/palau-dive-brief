@@ -296,7 +296,8 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
 
     Start at 10 and subtract:
       tide         ratio <0.7: -3 | <0.85: -2 | <1.15: -1 | spring: 0
-      swell pump   daily mean west waves >=3 m: -3 | >=2.5 m: -2 | >=2 m: -1   (+1 more at neap)
+      swell pump   daily mean west waves >=3 m: -3 | >=2.5 m: -2 | >=2 m: -1
+                   (+1 more at neap, +1 more again if the day's tidal range < 1.0 m)
     Pressure, wind and rain are not scored: Step 2 found pressure lifts lagoon and ocean together,
     and wind/rain had no measurable effect on lagoon level. Level: 8-10 high, 5-7 medium, 1-4 low."""
     ratio = day["tide_strength"]["ratio"]
@@ -314,6 +315,11 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
                 "breakdown": breakdown, "tide_only": True}
     if pump["level"]:
         pen = pump["level"] + (1 if ratio < 0.85 else 0)
+        # Project 1: below ~1 m daily range the tidal push is only ~5 cm, so swell set-up of 1-3 cm
+        # can take up to half of it: one more point off.
+        rng = day["tide_strength"].get("max_range_m")
+        if rng is not None and rng < 1.0:
+            pen += 1
         factors.append(f"West waves {pump['west_wave_mean_m']:.1f} m")
         breakdown["swell_pump"] = -pen
         score -= pen
