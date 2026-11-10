@@ -1,0 +1,35 @@
+name: Analysis project 2 (NOAA prediction archive)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "scripts/analysis_noaa/**"
+      - ".github/workflows/analysis-noaa.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  noaa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pandas
+      - run: python scripts/analysis_noaa/fetch_noaa.py "$RUNNER_TEMP/out/noaa"
+      - name: Publish to analysis-data branch
+        if: always()
+        run: |
+          git clone -q --depth 1 --branch analysis-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/pub" || exit 0
+          mkdir -p "$RUNNER_TEMP/out/noaa"
+          cd "$RUNNER_TEMP/pub" && rm -rf noaa && cp -r "$RUNNER_TEMP/out/noaa" noaa
+          git add -A
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "NOAA prediction archive (run ${{ github.run_id }})" || exit 0
+          git push -q origin analysis-data
