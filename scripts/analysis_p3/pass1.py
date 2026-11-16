@@ -16,17 +16,22 @@ import json
 import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import (AOIS, SCL_BAD, SCL_NODATA, SCL_WATER, dedupe, dn_offset, load_wl, log, read_window,  # noqa: E402
+from common import (AOIS, SCL_BAD, SCL_NODATA, SCL_WATER, best_per_aoi, dedupe, dn_offset, load_wl, log, read_window,  # noqa: E402
                     search_items, tide_stage, write_tif, yearly_models)
 
 MID = (1.0, 1.6)
+# The 10:35 overpass ties stage to range (flood only on small-range days, ebb on larger ones),
+# so the pilot and the ebb-minus-flood map use a wider "matched" band and wider time windows.
+MATCH = (0.8, 1.4)
+FLOOD_WIN = (-330, -60)
+EBB_WIN = (60, 330)
 UNION = (min(a["bbox"][0] for a in AOIS.values()), min(a["bbox"][1] for a in AOIS.values()),
          max(a["bbox"][2] for a in AOIS.values()), max(a["bbox"][3] for a in AOIS.values()))
 
@@ -129,10 +134,14 @@ def composites(aoi_key, items, out: Path, scenes: pd.DataFrame):
     write_tif(out / aoi_key / "stats.tif", np.stack([med["red"], p90 - p10, med["green"], nval]).astype(np.float32), tr, "float32")
 
     st = scenes.set_index("id").loc[ids]
-    mid = st["range_m"].between(*MID)
-    fl = (mid & st["min_from_hw"].between(-240, -60)).values
-    eb = (mid & st["min_from_hw"].between(60, 240)).values
-    info = {"n_stack": len(ids), "n_flood": int(fl.sum()), "n_ebb": int(eb.sum())}
+    mid = st["range_m"].between(*MATCH)
+    fl = (mid & st["min_from_hw"].between(*FLOOD_WIN)).values
+    eb = (mid & st["min_from_hw"].between(*EBB_WIN)).values
+    info = {"n_stack": len(ids), "n_flood": int(fl.sum()), "n_ebb": int(eb.sum()),
+            "range_flood": round(float(st["range_m"].values[fl].mean()), 2) if fl.any() else None,
+            "range_ebb": round(float(st["range_m"].values[eb].mean()), 2) if eb.any() else None,
+            "min_from_hw_flood": round(float(st["min_from_hw"].values[fl].mean())) if fl.any() else None,
+            "min_from_hw_ebb": round(float(st["min_from_hw"].values[eb].mean())) if eb.any() else None}
     if fl.sum() >= 3 and eb.sum() >= 3:
         d = []
         for b in ("red", "green"):
@@ -146,11 +155,14 @@ def composites(aoi_key, items, out: Path, scenes: pd.DataFrame):
 
 
 def pilots(aoi_key, scenes: pd.DataFrame, items_by_id, out: Path):
-    s = scenes[(scenes["range_m"].between(*MID)) & (scenes[f"{aoi_key}_core_clear"] >= 0.98)
-               & (scenes[f"{aoi_key}_clear"] >= 0.9) & (scenes[f"{aoi_key}_valid"] >= 0.99)]
+    s = scenes[(scenes["range_m"].between(*MATCH)) & (scenes[f"{aoi_key}_core_clear"] >= 0.98)
+               & (scenes[f"{aoi_key}_clear"] >= 0.85) & (scenes[f"{aoi_key}_valid"] >= 0.99)]
     rows = []
-    for stage, lo, hi in (("flood", -240, -120), ("ebb", 120, 240)):
-        g = s[s["min_from_hw"].between(lo, hi)].sort_values(f"{aoi_key}_clear", ascending=False).head(10)
+    for stage, (lo, hi) in (("flood", FLOOD_WIN), ("ebb", EBB_WIN)):
+        g = s[s["min_from_hw"].between(lo, hi)].copy()
+        # prefer scenes away from the turn and close to the middle of the matched range band
+        g["score"] = g[f"{aoi_key}_clear"] - (g["range_m"] - 1.1).abs() + g["min_from_hw"].abs() / 600
+        g = g.sort_values("score", ascending=False).head(10)
         for _, r in g.iterrows():
             it = items_by_id[r["id"]]
             date = r["date"].replace("-", "")
@@ -175,7 +187,7 @@ def pilots(aoi_key, scenes: pd.DataFrame, items_by_id, out: Path):
 
 def main():
     out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
-    summary = {"run_utc": datetime.utcnow().isoformat(timespec="seconds")}
+    summary = {"run_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     items = search_items()
     log("items found", len(items))
     tiles = pd.Series([i["tile"] for i in items]).value_counts().to_dict()
@@ -191,7 +203,7 @@ def main():
     errs = df["error"].notna().sum() if "error" in df else 0
     log("SCL scanned; errors", errs)
     summary["scl_errors"] = int(errs)
-    meta = pd.DataFrame([{k: i[k] for k in ("id", "datetime", "platform", "cloud", "baseline", "boa_offset_applied")} for i in items])
+    meta = pd.DataFrame([{k: i[k] for k in ("id", "tile", "datetime", "platform", "cloud", "baseline", "boa_offset_applied")} for i in items])
     df = meta.merge(df, on="id", how="left")
     df["t_utc"] = pd.to_datetime(df["datetime"]).dt.tz_convert(None)
     df["date"] = (df["t_utc"] + pd.Timedelta(hours=9)).dt.strftime("%Y-%m-%d")
@@ -202,10 +214,14 @@ def main():
     models = yearly_models(wl, years)
     stages = [tide_stage(t.to_pydatetime(), models) for t in df["t_utc"]]
     df = pd.concat([df.reset_index(drop=True), pd.DataFrame(stages)], axis=1)
-    df.drop(columns=["datetime"]).to_csv(out / "scenes.csv", index=False)
-    log("scenes.csv written", len(df))
+    log("scenes tables", len(df))
 
+    df.drop(columns=["datetime"]).to_csv(out / "scenes_all_tiles.csv", index=False)
+    per_aoi = {k: best_per_aoi(df, k) for k in AOIS}
     for k in AOIS:
+        per_aoi[k].drop(columns=["datetime"]).to_csv(out / f"scenes_{k}.csv", index=False)
+    for k in AOIS:
+        df = per_aoi[k]
         good = df[(df[f"{k}_core_clear"] >= 0.98) & (df[f"{k}_clear"] >= 0.8) & (df[f"{k}_valid"] >= 0.99)]
         summary[f"{k}_clear_scenes"] = int(len(good))
         summary[f"{k}_clear_mid"] = int(good["range_m"].between(*MID).sum())
@@ -218,7 +234,7 @@ def main():
 
     rows = []
     for k in AOIS:
-        rows += pilots(k, df, by_id, out)
+        rows += pilots(k, per_aoi[k], by_id, out)
     pd.DataFrame(rows).to_csv(out / "pilots.csv", index=False)
     summary["pilots"] = len(rows)
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str))

@@ -76,7 +76,7 @@ def axis_points(line, step=20.0):
     return d, xs, ys
 
 
-def process(item, ch, bbox, masks, axis):
+def process(item, ch, bbox, polys, axis):
     off = dn_offset(item)
     try:
         b = {}
@@ -92,13 +92,13 @@ def process(item, ch, bbox, masks, axis):
         scl = scl[: shape[0], : shape[1]]
     except Exception as e:  # noqa: BLE001
         return item["id"], None, str(e)[:150]
+    masks = {code: rasterize_poly(poly, tr, shape) for code, poly in polys.items()}
     bad = np.isin(scl, list(SCL_BAD)) | ~np.isfinite(b["red"])
     water = scl == SCL_WATER
     floor = np.nanpercentile(sw[water & ~bad], 2) if (water & ~bad).sum() > 200 else np.nan
     glint = np.clip(sw - (floor if np.isfinite(floor) else 0), 0, None)
     rows = []
     for code, m in masks.items():
-        m = m[: shape[0], : shape[1]]
         n = int(m.sum())
         ok = m & ~bad
         r = {"id": item["id"], "channel": ch, "code": code, "n_px": n, "valid_frac": round(ok.sum() / max(n, 1), 3),
@@ -130,25 +130,23 @@ def process(item, ch, bbox, masks, axis):
 def main():
     out = Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
     boxes, axes = load_boxes()
-    raw = subprocess.run(["git", "-C", str(ROOT), "show", "origin/analysis-data:project3/scenes.csv"], check=True, capture_output=True).stdout
-    scenes = pd.read_csv(io.BytesIO(raw))
     items = {i["id"]: i for i in dedupe(search_items())}
-    log("items", len(items), "scenes", len(scenes))
+    log("items", len(items))
     all_rows, prof_rows, errors = [], [], 0
     summary = {}
     for ch in boxes:
+        raw = subprocess.run(["git", "-C", str(ROOT), "show", f"origin/analysis-data:project3/scenes_{ch}.csv"],
+                             check=True, capture_output=True).stdout
+        scenes = pd.read_csv(io.BytesIO(raw))
         bbox = bounds_of(ch, boxes, axes)
-        # template grid from one scene
-        any_id = next(i for i in scenes["id"] if i in items)
-        a, tr = read_window(items[any_id]["assets"]["red"], bbox)
-        masks = {code: rasterize_poly(poly, tr, a.shape) for code, poly in boxes[ch].items()}
+        polys = boxes[ch]
         axis = axis_points(axes[ch]) if ch in axes else None
         sel = scenes[(scenes[f"{ch}_valid"] >= 0.95) & (scenes[f"{ch}_core_clear"] >= 0.5)]
         sel = sel[sel["id"].isin(items)]
-        log(f"[{ch}] boxes {list(masks)} px {[int(m.sum()) for m in masks.values()]}; scenes {len(sel)}")
-        summary[ch] = {"scenes_read": int(len(sel)), "box_px": {k: int(m.sum()) for k, m in masks.items()}}
+        log(f"[{ch}] boxes {list(polys)}; scenes {len(sel)}")
+        summary[ch] = {"scenes_read": int(len(sel))}
         with ThreadPoolExecutor(12) as ex:
-            futs = [ex.submit(process, items[i], ch, bbox, masks, axis) for i in sel["id"]]
+            futs = [ex.submit(process, items[i], ch, bbox, polys, axis) for i in sel["id"]]
             for k, f in enumerate(futs):
                 sid, res, err = f.result()
                 if err:

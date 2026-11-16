@@ -31,7 +31,7 @@ os.environ.setdefault("VSI_CACHE", "TRUE")
 
 STAC = "https://earth-search.aws.element84.com/v1"
 COLLECTION = "sentinel-2-l2a"
-TILE = "53NMH"
+TILES = ("53NMH", "53NMJ")  # German Channel is on MH; Ulong sits in the MH/MJ overlap and has data on MJ
 EPSG = 32653
 
 # Areas of interest, 7 x 7 km, UTM 53N metres (xmin, ymin, xmax, ymax).
@@ -99,15 +99,21 @@ def search_items(start_year=2017, max_cloud=90) -> list[dict]:
 
 
 def dedupe(items: list[dict]) -> list[dict]:
-    """One item per acquisition date on tile 53NMH: newest processing baseline, then newest update."""
-    df = [i for i in items if i["tile"] == TILE and set(BANDS) <= set(i["assets"])]
-    best: dict[str, dict] = {}
+    """One item per (tile, acquisition date): newest processing baseline, then newest update."""
+    df = [i for i in items if i["tile"] in TILES and set(BANDS) <= set(i["assets"])]
+    best: dict[tuple, dict] = {}
     for i in df:
-        d = i["datetime"][:10]
+        d = (i["tile"], i["datetime"][:10])
         key = (str(i.get("baseline") or ""), str(i.get("updated") or ""))
         if d not in best or key > (str(best[d].get("baseline") or ""), str(best[d].get("updated") or "")):
             best[d] = i
     return sorted(best.values(), key=lambda i: i["datetime"])
+
+
+def best_per_aoi(scenes: pd.DataFrame, aoi: str) -> pd.DataFrame:
+    """For each date keep the tile whose window over this AOI is most complete and clear."""
+    s = scenes.sort_values([f"{aoi}_valid", f"{aoi}_core_clear", f"{aoi}_clear"])
+    return s.groupby("date").tail(1).sort_values("date").reset_index(drop=True)
 
 
 def dn_offset(item: dict) -> int:
