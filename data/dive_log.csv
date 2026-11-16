@@ -1,1 +1,5 @@
-date,time,site,found_dir,strength_0_3,vis_m,predicted,match,notes
+date,time,site,found_dir,strength,vis_m,predicted,match,notes,source,malakal_stage,h_since,since,h_to_turn,range_m,tide_label,ratio,rate_cm_h,zone,wx_issued,wind_kn,wind_dir,gust_kn,swell_m,swell_dir,swell_s,wave_m,rain24_mm,pump_level,west_wave_mean_m,conf_score,conf_level
+2026-11-12,11:09,ulong-channel,OUT,2,30,OUT 3/5,matched,Dropped inside the lagoon and flowed with the current towards the outer sea; strong and stable current,app,outgoing,2.2,H 08:58,3.5,0.76,Mid,1.11,-19,west-north,2026-11-12 11:29,13.3,ENE,18.7,0.9,N,7.2,1.4,5.2,0,1.48,9,high
+2026-11-15,10:51,ulong-channel,OUT,2,20,SLACK 1/5,wrong,,app (logged 2026-11-16),incoming,6.3,L 04:33,0.3,1.07,Neap,0.81,2,west-north,2026-11-16 20:56,11.6,ENE,15.2,1.1,N,7,1.28,0.7,0,1.4,8,high
+2026-11-16,09:22,german-channel,IN,1,25,IN 2/5,matched,No manta; a small one passed by,app,incoming,4.1,L 05:15,2.8,0.94,Neap,0.67,19,west-south,2026-11-16 16:19,9.5,ENE,12.4,0.86,N,6.8,0.98,2.5,0,1.01,7,medium
+2026-11-16,11:11,blue-corner,N>S,3+,20,IN 1/5 (Malakal rising; slack from 11:15),wrong,Current from north to south,manual (context backfilled by Claude from the 21:20 brief),incoming,5.9,L 05:15,1.0,0.94,Neap,0.67,6,west-south,2026-11-16 21:20,7.9,ENE,11.9,0.84,NNE,6.8,0.96,2.5,0,0.99,7,medium

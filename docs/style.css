@@ -168,8 +168,9 @@ input, select, textarea {
 }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 .seg.mod { margin-top: 6px; }
-.seg.mod button { font-size: 12.5px; font-weight: 500; padding: 6px 8px; color: var(--text-2); border-style: dashed; }
-.seg.mod button[aria-pressed="true"] { border-style: solid; color: var(--bg); }
+.seg.mod button { font-size: 12.5px; font-weight: 500; padding: 6px 8px; color: var(--muted); background: var(--slack-soft); border-color: transparent; }
+.seg.mod button[aria-pressed="true"] { background: var(--muted); border-color: var(--muted); color: var(--bg); }
+.seg button.c-ns small { font-weight: 400; font-size: 11.5px; opacity: .75; }
 .hm { display: flex; align-items: center; gap: 4px; }
 .hm select { flex: 1; text-align: center; }
 .hm b { color: var(--text-2); }

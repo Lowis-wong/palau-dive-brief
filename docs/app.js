@@ -8,6 +8,19 @@ const DIR_LABEL = { in: "Incoming", out: "Outgoing", slack: "Slack" };
 const DIR_SHORT = { in: "IN", out: "OUT", slack: "SLACK" };
 const segDir = (d) => (d === "incoming" ? "in" : d === "outgoing" ? "out" : "slack");
 const LOG_KEY = "pdb.logs.v1";
+/* Corners: current runs along the reef, so "in/out" is confusing there. Until logs show which way each
+   corner runs on a rising/falling Malakal tide (sites.json flow_dir), say rising/falling instead. */
+const isCompass = (meta) => meta?.dir_mode === "compass";
+const ARROW = { "N>S": "N→S", "S>N": "S→N" };
+function phaseText(meta, dir, short) {
+  if (dir === "slack") return short ? "SLACK" : "Slack";
+  if (isCompass(meta)) {
+    const fd = meta.flow_dir?.[dir === "in" ? "incoming" : "outgoing"];
+    if (fd) return ARROW[fd] || fd;
+    return dir === "in" ? (short ? "RISING" : "Rising") : (short ? "FALLING" : "Falling");
+  }
+  return short ? DIR_SHORT[dir] : DIR_LABEL[dir];
+}
 
 let brief = null;
 let dayIdx = 0;
@@ -301,19 +314,22 @@ function renderSites() {
     const stageNote = dir === "slack" ? meta.slack : advice?.notes;
     const bar = sd.segments.map((g) => {
       const span = tToMin(g.end) + 5 - tToMin(g.start);
-      return `<span class="${segDir(g.direction)}" style="flex:${span}" title="${DIR_LABEL[segDir(g.direction)]} ${g.start}–${g.end}, peak ${g.peak_level}/5"></span>`;
+      return `<span class="${segDir(g.direction)}" style="flex:${span}" title="${phaseText(meta, segDir(g.direction))} ${g.start}–${g.end}, peak ${g.peak_level}/5"></span>`;
     }).join("");
     const markLeft = (planK / 72) * 100;
-    const best = sd.best ? `Best incoming: <b class="num">${sd.best.start}–${sd.best.end}</b>, peak ${sd.best.peak_level}/5 at ${sd.best.peak_time}` : "No incoming window between 06:00 and 18:00";
-    const conf = meta.confidence === "unverified" ? "estimate, not yet calibrated" : `${esc(meta.confidence)} · ${meta.n_logs} logs`;
+    const bestName = isCompass(meta) ? (meta.flow_dir ? phaseText(meta, "in") : "rising tide") : "incoming";
+    const best = sd.best ? `Best ${bestName}: <b class="num">${sd.best.start}–${sd.best.end}</b>, peak ${sd.best.peak_level}/5 at ${sd.best.peak_time}` : `No ${bestName} window between 06:00 and 18:00`;
+    const nl = meta.n_logs || 0;
+    const conf = meta.confidence === "unverified" ? (nl ? `estimate · ${nl} log${nl > 1 ? "s" : ""}` : "estimate, not yet calibrated") : `${esc(meta.confidence)} · ${nl} logs`;
+    const ns = isCompass(meta) && !meta.flow_dir ? `<span class="badge">N/S direction not mapped yet</span>` : "";
     return `<article class="site">
       <div class="site-head"><span class="site-name">${esc(meta.name)}</span>
-        ${dir ? `<span class="pill ${dir}">${DIR_SHORT[dir]} · ${lvl}/5</span>` : ""}</div>
+        ${dir ? `<span class="pill ${dir}">${phaseText(meta, dir, true)} · ${lvl}/5</span>` : ""}</div>
       <div class="bar">${bar}<i class="mark" style="left:calc(${markLeft}% - 1px)"></i></div>
       <div class="bar-ticks" aria-hidden="true">${Array.from({ length: 13 }, (_, i) => `<i style="left:${(i / 12) * 100}%"></i>`).join("")}</div>
       <div class="bar-lab">${[6, 9, 12, 15, 18].map((h) => `<span style="left:${((h - 6) / 12) * 100}%">${String(h).padStart(2, "0")}</span>`).join("")}</div>
       <p class="best">${best}</p>
-      <p class="badges"><span class="badge">lag ${meta.lag_min >= 0 ? "+" : ""}${meta.lag_min} min</span><span class="badge">${conf}</span></p>
+      <p class="badges"><span class="badge">lag ${meta.lag_min >= 0 ? "+" : ""}${meta.lag_min} min</span><span class="badge">${conf}</span>${ns}</p>
       ${advice ? `<p class="entry">${esc(advice.entry)}</p>` : ""}
       <div class="notes">${stageNote ? `<p>${esc(stageNote)}</p>` : ""}<p>${esc(meta.hazards)}</p></div>
     </article>`;
@@ -416,6 +432,20 @@ function renderLogSites() {
   if (!f.date.value) f.date.value = palauNow().date;
   const hist = brief.days.find((d) => d.history);
   if (hist) f.date.min = hist.date;
+  renderDirButtons();
+}
+const picked = {};
+const DIR_BTNS = {
+  lagoon: [["IN", "c-in", "In (to lagoon)"], ["OUT", "c-out", "Out (to ocean)"], ["SLACK", "c-slack", "Slack"], ["MIXED", "c-mixed", "Turned / mixed"]],
+  compass: [["N>S", "c-ns", "N → S <small>from north</small>"], ["S>N", "c-ns", "S → N <small>from south</small>"], ["SLACK", "c-slack", "Slack"], ["MIXED", "c-mixed", "Turned / mixed"]],
+};
+function renderDirButtons() {
+  const f = $("#logForm"), seg = f.querySelector('.seg[data-name="dir"]');
+  const set = isCompass(brief?.sites.find((x) => x.id === f.site.value)) ? "compass" : "lagoon";
+  if (seg.dataset.set === set) return;
+  seg.dataset.set = set;
+  seg.innerHTML = DIR_BTNS[set].map(([v, c, t]) => `<button type="button" class="${c}" data-v="${v}" aria-pressed="false">${t}</button>`).join("");
+  delete picked.dir;
 }
 /* Freeze the conditions at the moment a dive is saved. The brief only holds yesterday onward,
    so this is the only chance to keep the forecast that was in hand for that dive. */
@@ -446,7 +476,8 @@ function snapshot(siteId, date, time) {
   // Prediction for this site with the parameters in force today
   const sd = day.sites.find((s) => s.id === siteId);
   const code = sd?.states[Math.round((mins - 360) / 10)];
-  if (code) ctx.pred = { dir: DIR_SHORT[DIR[code[0]]], level: +code.slice(1), lag_min: meta?.lag_min, factor: meta?.strength_factor };
+  if (code) ctx.pred = { dir: DIR_SHORT[DIR[code[0]]], level: +code.slice(1), lag_min: meta?.lag_min, factor: meta?.strength_factor,
+    ...(isCompass(meta) ? { flow_dir: meta.flow_dir || null } : {}) };
   // Weather at the entry hour for the site's zone
   const zone = meta?.zone || "west-south";
   const hr = brief.weather?.hourly?.[date]?.[zone]?.[Math.floor(mins / 60)];
@@ -463,29 +494,58 @@ function snapshot(siteId, date, time) {
   return ctx;
 }
 const cmp = (deg) => (deg == null ? "?" : PTS[Math.round((deg % 360) / 22.5) % 16]);
-function logLine(l) {
-  const name = brief?.sites.find((s) => s.id === l.site)?.name || l.site;
+/* Compact METAR-style lines (format documented in README "Log format"). */
+const siteCode = (id) => (id || "other").split("-")[0].toUpperCase();
+const hm = (t) => (t || "").replace(":", "");
+const n1 = (v, d = 1) => (v == null ? "//" : (+v).toFixed(d));
+function predCode(l) {
   const p = l.ctx?.pred;
-  return `${l.date} ${l.time} | ${name} | found ${l.dir || "?"} str ${l.str ?? "?"} | vis ${l.vis || "?"} m | pred ${p ? `${p.dir} ${p.level}/5 (lag ${p.lag_min})` : l.pred || "n/a"} | ${l.match || "-"}${l.notes ? " | " + l.notes : ""}`;
+  if (!p) return l.pred ? `PRED ${String(l.pred).toUpperCase()}` : "PRED NIL";
+  const meta = brief?.sites.find((s) => s.id === l.site);
+  let d = p.dir;
+  if (p.flow_dir !== undefined || isCompass(meta)) {
+    const fd = p.flow_dir?.[p.dir === "IN" ? "incoming" : "outgoing"];
+    d = p.dir === "SLACK" ? "SLACK" : fd || (p.dir === "IN" ? "RISE" : "FALL");
+  }
+  return `PRED ${d}${p.level} LAG${p.lag_min ?? "/"}`;
+}
+function logLine(l) {
+  const parts = [l.date.replace(/-/g, ""), hm(l.time), siteCode(l.site), "CUR", l.dir || "//", l.str ?? "/",
+    `VIS${l.vis || "//"}`, predCode(l)];
+  if (l.match) parts.push(l.match.toUpperCase());
+  if (l.notes) parts.push("RMK", l.notes);
+  return parts.join(" ");
 }
 function ctxLine(c) {
-  if (!c) return "   (no context saved: Claude to backfill)";
+  if (!c) return "   NOCTX";
   const parts = [];
-  if (c.tide) parts.push(`Malakal ${c.tide.stage} ${c.tide.h_since} h after ${c.tide.since}, ${c.tide.h_to_next} h to turn, range ${c.tide.range_m} m, ${c.tide.label} x${c.tide.ratio}, rate ${c.tide.rate_cm_h ?? "?"} cm/h`);
-  if (c.wx) parts.push(`${c.wx.zone} fcst ${c.wx.issued}: swell ${c.wx.swell_m ?? "?"} m ${cmp(c.wx.swell_dir)} ${c.wx.swell_s ?? "?"} s, waves ${c.wx.wave_m ?? "?"} m, wind ${cmp(c.wx.wind_dir)} ${c.wx.wind_kn ?? "?"} kn g${c.wx.gust_kn ?? "?"}`);
-  if (c.rain24_mm != null) parts.push(`rain24 ${c.rain24_mm} mm`);
-  if (c.pump) parts.push(`pump ${c.pump.level}/3 (W mean ${c.pump.west_mean_m} m)`);
-  if (c.conf) parts.push(`conf ${c.conf.score ?? ""}/10 ${c.conf.level}${c.conf.factors.length ? ` (${c.conf.factors.join(", ")})` : ""}`);
+  if (c.tide) {
+    const t = c.tide;
+    const r = t.rate_cm_h == null ? "//" : `${t.rate_cm_h >= 0 ? "+" : ""}${t.rate_cm_h}`;
+    parts.push(`MLK ${t.stage === "incoming" ? "RISE" : "FALL"} ${n1(t.h_since)}H/${t.since.replace(" ", "").replace(":", "")} TURN${n1(t.h_to_next)}H RNG${n1(t.range_m, 2)} ${t.label.toUpperCase()}${n1(t.ratio, 2)} RATE${r}`);
+  }
+  if (c.wx) {
+    const w = c.wx, z = { "west-south": "WS", "west-north": "WN", east: "E" }[w.zone] || w.zone;
+    const dd = (v) => (v == null ? "///" : String(Math.round(v) % 360).padStart(3, "0"));
+    const ff = (v) => (v == null ? "//" : String(Math.round(v)).padStart(2, "0"));
+    const iss = (w.issued || "").slice(5).replace(/[-:]/g, "").replace(" ", "-");
+    parts.push(`${z} ${dd(w.wind_dir)}${ff(w.wind_kn)}G${ff(w.gust_kn)}KT SWL${dd(w.swell_dir)}/${n1(w.swell_m, 2)}M/${w.swell_s == null ? "//" : Math.round(w.swell_s)}S WV${n1(w.wave_m, 2)}M ${c.src === "hindcast" ? "HC" : "FC"}${iss}`);
+  }
+  const tail = [];
+  if (c.rain24_mm != null) tail.push(`RA${c.rain24_mm}`);
+  if (c.pump) tail.push(`PMP${c.pump.level}/${n1(c.pump.west_mean_m, 2)}`);
+  if (c.conf) tail.push(`CONF${c.conf.score ?? "/"}`);
+  if (tail.length) parts.push(tail.join(" "));
   return "   " + parts.join(" | ");
 }
 function renderLogs() {
   const logs = store.get(LOG_KEY, []);
-  if (!logs.length) { $("#logList").innerHTML = `<p class="empty">Saved logs stay on this phone until you copy them to Claude.</p>`; return; }
+  if (!logs.length) { $("#logList").innerHTML = `<p class="empty">Saved logs stay on this phone.</p>`; return; }
   $("#logList").innerHTML = `<div class="loghead"><b>${logs.length} unsent</b>
-    <span><button class="ghost" id="copyLogs" type="button">Copy for Claude</button> <button class="ghost" id="clearLogs" type="button">Clear</button></span></div>` +
+    <span><button class="ghost" id="copyLogs" type="button">Copy</button> <button class="ghost" id="clearLogs" type="button">Clear</button></span></div>` +
     logs.map((l, i) => `<div class="logitem"><span>${esc(logLine(l))}</span><button type="button" data-del="${i}" aria-label="Delete">×</button></div>`).join("");
   $("#copyLogs").onclick = async () => {
-    const txt = "Dive log feedback:\n" + logs.map((l) => `${logLine(l)}\n${ctxLine(l.ctx)}`).join("\n");
+    const txt = "DIVE LOG\n" + logs.map((l) => `${logLine(l)}\n${ctxLine(l.ctx)}`).join("\n");
     try { await navigator.clipboard.writeText(txt); $("#copyLogs").textContent = "Copied ✓"; }
     catch { prompt("Copy this:", txt); }
   };
@@ -500,13 +560,16 @@ function initLogForm() {
   // 24-hour entry time (iOS shows AM/PM in a native time field, so two pickers instead)
   f.hh.innerHTML += Array.from({ length: 24 }, (_, h) => `<option>${pad2(h)}</option>`).join("");
   f.mm.innerHTML = Array.from({ length: 12 }, (_, i) => `<option>${pad2(i * 5)}</option>`).join("");
-  const picked = {};
-  f.querySelectorAll(".seg").forEach((g) => g.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+  f.addEventListener("click", (e) => {
+    const b = e.target.closest(".seg button"); if (!b) return;
+    const g = b.closest(".seg");
     const again = g.hasAttribute("data-toggle") && b.getAttribute("aria-pressed") === "true";
     g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false"));
     if (again) { delete picked[g.dataset.name]; return; } // tap again to clear the +/−
     b.setAttribute("aria-pressed", "true"); picked[g.dataset.name] = b.dataset.v;
-  })));
+  });
+  f.site.addEventListener("change", renderDirButtons);
+  renderDirButtons(); // before the brief loads: channel buttons
   f.addEventListener("submit", (e) => {
     e.preventDefault();
     // strength with optional modifier: "1-" a bit weaker than 1, "3+" stronger than 3 ("0-" makes no sense)

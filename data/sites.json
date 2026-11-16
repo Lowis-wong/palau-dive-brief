@@ -26,7 +26,11 @@
       "slack": "Quietest period; can enter from the plateau and explore slowly.",
       "hazards": "Down-currents and current shifts mid-dive. Negative entry, reef hook, SMB.",
       "confidence": "unverified",
-      "n_logs": 0
+      "n_logs": 1,
+      "dir_mode": "compass",
+      "flow_dir": null,
+      "flow_dir_note": "Which way the current runs along the corner on a rising vs falling Malakal tide is not known yet. Logs record N>S / S>N; set flow_dir to {\"incoming\": \"N>S\", \"outgoing\": \"S>N\"} (or the reverse) once logs show it.",
+      "log_note": "2026-11-16 11:11 (Neap, ~1 h before Malakal HW 12:08): N>S strength 3+ while the model had rising 1/5, going slack at 11:15. Strength far above prediction near the turn."
     },
     {
       "id": "siaes-corner",
@@ -49,7 +53,10 @@
       "slack": "Easy wall dive; less action at the corner.",
       "hazards": "Fire coral and hydroids on the reef top. Flow on top can differ from flow on the wall.",
       "confidence": "unverified",
-      "n_logs": 0
+      "n_logs": 0,
+      "dir_mode": "compass",
+      "flow_dir": null,
+      "flow_dir_note": "Which way the current runs along the corner on a rising vs falling Malakal tide is not known yet. Logs record N>S / S>N; set flow_dir to {\"incoming\": \"N>S\", \"outgoing\": \"S>N\"} (or the reverse) once logs show it."
     },
     {
       "id": "ulong-channel",
@@ -72,15 +79,15 @@
       "slack": "Current may reverse mid-dive near the turn. If it reverses, turn and go with it.",
       "hazards": "Strong, changing currents. Titan triggerfish nests in season.",
       "confidence": "unverified",
-      "n_logs": 0,
-      "lag_note": "Set to 0 on 2026-11-10 (was +45 guess). Project 1: lagoon-ocean head reverses ~35-40 min before Malakal HW/LW; flow inertia delays the turn, so the turn is expected near Malakal HW/LW. Unverified."
+      "n_logs": 2,
+      "lag_note": "Set to 0 on 2026-11-10 (was +45 guess). Project 1: lagoon-ocean head reverses ~35-40 min before Malakal HW/LW; flow inertia delays the turn, so the turn is expected near Malakal HW/LW. Unverified. 2026-11-15 log: OUT strength 2 at 10:51, 17 min before Malakal HW 11:08 (model: slack) -> hint that Ulong turns earlier than Malakal (negative lag). One log only; lag unchanged."
     },
     {
       "id": "german-channel",
       "name": "German Channel",
       "type": "channel",
-      "lat": 7.1210,
-      "lon": 134.2720,
+      "lat": 7.121,
+      "lon": 134.272,
       "exposure": "southwest outer reef / lagoon pass",
       "zone": "west-south",
       "lag_min": 0,
@@ -96,7 +103,7 @@
       "slack": "Good for waiting at the cleaning station.",
       "hazards": "Boat traffic in the channel; shallow, fast water inside.",
       "confidence": "unverified",
-      "n_logs": 0,
+      "n_logs": 1,
       "lag_note": "Set to 0 on 2026-11-10 (was +45 guess). Project 1: lagoon-ocean head reverses ~35-40 min before Malakal HW/LW; flow inertia delays the turn, so the turn is expected near Malakal HW/LW. Unverified."
     }
   ]

@@ -512,7 +512,7 @@ def main() -> None:
         d["swell_pump"] = swell_pump(zs)
 
     site_meta = [{k: s.get(k) for k in ("id", "name", "type", "exposure", "zone", "lag_min", "strength_factor", "incoming", "outgoing",
-                                     "slack", "hazards", "confidence", "n_logs")} for s in site_cfg]
+                                     "slack", "hazards", "confidence", "n_logs", "dir_mode", "flow_dir")} for s in site_cfg]
     brief = {
         "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": "Palau (UTC+9)",
         "station": {"name": "Malakal Harbor", "id": STATION, "datum": "MLLW"},
