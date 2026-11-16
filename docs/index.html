@@ -76,7 +76,9 @@
       <label>Site<select name="site" required></select></label>
       <div class="two">
         <label>Date<input type="date" name="date" required></label>
-        <label>Entry<input type="time" name="time" required></label>
+        <label>Entry (24 h)<span class="hm">
+          <select name="hh" required aria-label="Hour"><option value="">--</option></select><b>:</b>
+          <select name="mm" aria-label="Minute"></select></span></label>
       </div>
       <fieldset><legend>Current I found</legend>
         <div class="seg" data-name="dir">
@@ -92,6 +94,10 @@
           <button type="button" data-v="1">1 mild</button>
           <button type="button" data-v="2">2 strong</button>
           <button type="button" data-v="3">3 ripping</button>
+        </div>
+        <div class="seg mod" data-name="mod" data-toggle>
+          <button type="button" data-v="-">− a bit weaker</button>
+          <button type="button" data-v="+">+ a bit stronger</button>
         </div>
       </fieldset>
       <div class="two">

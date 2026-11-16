@@ -75,6 +75,11 @@ h2 { font-size: 13px; margin: 0; text-transform: uppercase; letter-spacing: .06e
 .days button small { display: block; font-size: 11px; color: var(--muted); }
 .days button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 .days button[aria-pressed="true"] small { color: inherit; opacity: .75; }
+.days button.hist { border-style: dashed; background: transparent; color: var(--text-2); }
+.days button.hist[aria-pressed="true"] { border-style: solid; background: var(--text-2); color: var(--bg); border-color: var(--text-2); }
+.days button.histbtn { border-style: dashed; background: transparent; color: var(--muted); min-width: 0; font-size: 12px; }
+.days button.histbtn small { color: inherit; }
+.histnote { margin: 0 0 10px; font-size: 12px; color: var(--text-2); background: var(--slack-soft); border-radius: 10px; padding: 6px 10px; }
 
 main { max-width: 640px; margin: 0 auto; padding: 12px 16px 32px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
@@ -162,6 +167,12 @@ input, select, textarea {
   background: var(--bg); color: var(--text);
 }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.seg.mod { margin-top: 6px; }
+.seg.mod button { font-size: 12.5px; font-weight: 500; padding: 6px 8px; color: var(--text-2); border-style: dashed; }
+.seg.mod button[aria-pressed="true"] { border-style: solid; color: var(--bg); }
+.hm { display: flex; align-items: center; gap: 4px; }
+.hm select { flex: 1; text-align: center; }
+.hm b { color: var(--text-2); }
 .primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
 .loghead { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 6px; gap: 8px; }
 .logitem { font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; }

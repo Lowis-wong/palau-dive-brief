@@ -33,6 +33,7 @@ CONSTANTS = ROOT / "data" / "tide_constants.json"
 PALAU = timezone(timedelta(hours=9))
 STATION = "1841367"
 DAYS_AHEAD = 35
+HISTORY_DAYS = 15  # past days kept for reference (yesterday included); folded away in the app
 UA = {"User-Agent": "palau-dive-brief (github actions)"}
 
 WEATHER_ZONES = [
@@ -100,24 +101,28 @@ def fetch_tides(start: date, end: date) -> tuple[list[dict], list[dict] | None]:
     return hilo, series
 
 
+# History days need the 24 h of rain before 06:00 of the first one, hence one extra day.
+PAST_WX = HISTORY_DAYS + 1
+
+
 def fetch_weather() -> dict:
     zones = []
     for z in WEATHER_ZONES:
         mq = urllib.parse.urlencode({
             "latitude": z["lat"], "longitude": z["lon"], "timezone": "Pacific/Palau", "forecast_days": 7,
-            "past_days": 1,
+            "past_days": PAST_WX,
             "hourly": "wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,"
                       "swell_wave_period,wind_wave_height,sea_surface_temperature"})
         fq = urllib.parse.urlencode({
             "latitude": z["lat"], "longitude": z["lon"], "timezone": "Pacific/Palau", "forecast_days": 7,
-            "past_days": 1, "wind_speed_unit": "kn",
+            "past_days": PAST_WX, "wind_speed_unit": "kn",
             "hourly": "wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation"})
         marine = json.loads(get("https://marine-api.open-meteo.com/v1/marine?" + mq))["hourly"]
         fc = json.loads(get("https://api.open-meteo.com/v1/forecast?" + fq))["hourly"]
         zones.append({**z, "marine": marine, "forecast": fc})
     # Koror (land point) for sky/rain icons and sunrise/sunset in the multi-day outlook
     kq = urllib.parse.urlencode({
-        "latitude": 7.34, "longitude": 134.48, "timezone": "Pacific/Palau", "forecast_days": 8, "past_days": 1,
+        "latitude": 7.34, "longitude": 134.48, "timezone": "Pacific/Palau", "forecast_days": 8, "past_days": PAST_WX,
         "hourly": "weather_code,precipitation,precipitation_probability,cloud_cover",
         "daily": "sunrise,sunset"})
     try:
@@ -331,7 +336,7 @@ def assess_confidence(day: dict, zones: list[dict] | None) -> dict:
 
 # ----------------------------------------------------------------------------- assemble
 def build_day(curve: tides.TideCurve, ext: list[tides.Extreme], sites: list[dict], day: date,
-              mean_max_range: float, low_cut: float) -> dict:
+              mean_max_range: float, low_cut: float, history: bool = False) -> dict:
     d0 = datetime.combine(day, datetime.min.time())
     events = [{"time": e.t.strftime("%H:%M"), "kind": e.kind, "h": round(e.h, 2),
                **({"table": e.noaa_t.strftime("%H:%M")} if getattr(e, "noaa_t", None) else {})}
@@ -374,6 +379,7 @@ def build_day(curve: tides.TideCurve, ext: list[tides.Extreme], sites: list[dict
         "events": events, "curve_10min": curve_pts,
         "reference_segments": ref_segs,
         "sites": site_out, "flags": flags,
+        **({"history": True} if history else {}),
     }
 
 
@@ -388,6 +394,9 @@ def main() -> None:
     # Keep yesterday so a dive logged the morning after still finds its tide/weather context.
     start = date.fromisoformat(args.start) if args.start else now.date() - timedelta(days=1)
     end = start + timedelta(days=args.days - 1)
+    # Older days (before yesterday) are kept as history: tides from the same constants, weather as
+    # Open-Meteo's past-days hindcast. They do not enter the tide statistics below.
+    hstart = start - timedelta(days=HISTORY_DAYS - 1)
     try:
         prev = json.loads(OUT.read_text()) if OUT.exists() else {}
     except (ValueError, OSError):
@@ -405,7 +414,7 @@ def main() -> None:
         consts = tides.load_constants(CONSTANTS)
         if consts:
             # Own constants fitted to Malakal observations (Project 2): NOAA predictions run ~15-18 min late.
-            s0 = datetime.combine(start - timedelta(days=1), datetime.min.time()) - timedelta(hours=9)
+            s0 = datetime.combine(hstart - timedelta(days=1), datetime.min.time()) - timedelta(hours=9)
             s1 = datetime.combine(end + timedelta(days=2), datetime.min.time()) - timedelta(hours=9)
             ser_utc = tides.predict_series(consts, s0, s1, 6)
             series = [{"t": (t + timedelta(hours=9)).strftime("%Y-%m-%d %H:%M"), "v": round(v, 4)} for t, v in ser_utc]
@@ -413,7 +422,7 @@ def main() -> None:
             hilo = [{"t": e.t.strftime("%Y-%m-%d %H:%M"), "v": round(e.h, 3), "type": e.kind} for e in ext_own]
             status["tides"] = f"own constants (fit {consts['fit_start_utc'][:10]}..{consts['fit_end_utc'][:10]})"
         try:  # NOAA: reference "table" times, and the fallback if the constants are missing
-            n_hilo, n_series = fetch_tides(start, end)
+            n_hilo, n_series = fetch_tides(hstart, end)
             noaa_ext = tides.parse_hilo(n_hilo)
             if hilo is None:
                 hilo, series = n_hilo, n_series
@@ -439,15 +448,18 @@ def main() -> None:
                 e.noaa_t = min(same, key=lambda n: abs((n.t - e.t).total_seconds())).t
     last_day = min(end, (ext[-1].t - timedelta(hours=1)).date())
 
-    # reference statistics across the window
+    # reference statistics across the forward window (yesterday onward), as before history was added
     days = [start + timedelta(days=i) for i in range((last_day - start).days + 1)]
+    first_ext = (ext[0].t + timedelta(hours=18)).date()  # need a turn before 06:00 of the first day
+    hist = [hstart + timedelta(days=i) for i in range((start - hstart).days) if hstart + timedelta(days=i) >= first_ext]
     maxes = [max(r) for r in (tides.day_ranges(ext, d) for d in days) if r]
     mean_max_range = statistics.mean(maxes) if maxes else 1.0
-    lows = sorted(e.h for e in ext if e.kind == "L")
+    lows = sorted(e.h for e in ext if e.kind == "L" and e.t.date() >= start - timedelta(days=1))
     low_cut = lows[max(0, int(len(lows) * 0.12) - 1)] if lows else -99
 
     site_cfg = json.loads(SITES.read_text())["sites"]
-    out_days = [build_day(curve, ext, site_cfg, d, mean_max_range, low_cut) for d in days]
+    out_days = ([build_day(curve, ext, site_cfg, d, mean_max_range, low_cut, history=True) for d in hist]
+                + [build_day(curve, ext, site_cfg, d, mean_max_range, low_cut) for d in days])
 
     # weather
     weather = prev.get("weather")
@@ -467,12 +479,13 @@ def main() -> None:
             status["weather"] = f"stale: {ex}"
     if raw:
         wdays = {}
-        for d in days[:8]:
+        wx_days = hist + days[:8]
+        for d in wx_days:
             zs = [s for s in (summarize_zone(z, d) for z in raw["zones"]) if s]
             if zs:
                 wdays[d.isoformat()] = zs
         weather = {"generated_at": now.strftime("%Y-%m-%d %H:%M"), "days": wdays,
-                   "hourly": hourly_table(raw["zones"], days[:8])}
+                   "hourly": hourly_table(raw["zones"], wx_days)}
         try:
             weather["outlook"] = outlook(raw, days[:9])
         except Exception as ex:  # noqa: BLE001

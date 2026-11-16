@@ -12,6 +12,7 @@ const LOG_KEY = "pdb.logs.v1";
 let brief = null;
 let dayIdx = 0;
 let planK = 15; // 10-min steps after 06:00 (15 => 08:30)
+let showHist = false; // past days (before yesterday) stay folded unless opened
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -44,7 +45,7 @@ async function load() {
   }
   const today = palauNow().date;
   const i = brief.days.findIndex((d) => d.date === today);
-  dayIdx = i >= 0 ? i : 0;
+  dayIdx = i >= 0 ? i : Math.max(0, brief.days.findIndex((d) => !d.history));
   if (i >= 0) {
     const m = palauNow().mins;
     if (m > 360 && m < 1080) planK = Math.round((m - 360) / 10);
@@ -69,11 +70,20 @@ function renderFresh() {
 
 function renderDays() {
   const nav = $("#days");
-  nav.innerHTML = brief.days.map((d, i) =>
-    `<button type="button" data-i="${i}" aria-pressed="${i === dayIdx}">${esc(d.weekday)}<small>${d.date.slice(8)}/${d.date.slice(5, 7)}</small></button>`).join("");
-  nav.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+  const nHist = brief.days.filter((d) => d.history).length;
+  if (brief.days[dayIdx]?.history) showHist = true;
+  const btn = (d, i) => `<button type="button" data-i="${i}" class="${d.history ? "hist" : ""}" aria-pressed="${i === dayIdx}">${esc(d.weekday)}<small>${d.date.slice(8)}/${d.date.slice(5, 7)}</small></button>`;
+  const toggle = nHist ? `<button type="button" class="histbtn" id="histBtn" aria-expanded="${showHist}">${showHist ? "Hide" : "‹ Past"}<small>${nHist} days</small></button>` : "";
+  nav.innerHTML = toggle + brief.days.map((d, i) => (d.history && !showHist ? "" : btn(d, i))).join("");
+  nav.querySelectorAll("button[data-i]").forEach((b) => b.addEventListener("click", () => {
     dayIdx = +b.dataset.i; renderAll();
   }));
+  $("#histBtn")?.addEventListener("click", () => {
+    showHist = !showHist;
+    if (!showHist && brief.days[dayIdx]?.history) dayIdx = Math.max(0, brief.days.findIndex((d) => !d.history));
+    renderAll();
+    if (showHist) nav.scrollLeft = 0;
+  });
   nav.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
 }
 
@@ -145,7 +155,8 @@ function renderSummary() {
     </div>` : "";
 
   // Only warnings stronger than the near-permanent small craft advisory.
-  const nwsFresh = brief.nws && (Date.parse(d.date) - Date.parse(brief.nws.fetched_at.slice(0, 10))) / 864e5 <= 1;
+  const nwsAge = brief.nws ? (Date.parse(d.date) - Date.parse(brief.nws.fetched_at.slice(0, 10))) / 864e5 : null;
+  const nwsFresh = nwsAge != null && nwsAge >= 0 && nwsAge <= 1;
   const alerts = nwsFresh ? (brief.nws.headlines || []).filter((h) => !/small craft advisory/i.test(h)) : [];
 
   const conf = d.confidence;
@@ -164,7 +175,9 @@ function renderSummary() {
       <div><div class="k">Swell</div><div class="cv num">${swellZ.swell_max_m ?? "–"}<small> m</small></div>
       <div class="s num">from ${esc(swellZ.swell_dir ?? "–")} · ${swellZ.swell_period_s != null ? Math.round(swellZ.swell_period_s) : "–"} s</div></div></div>` : "";
 
+  const histNote = d.history ? `<p class="histnote"><b>Past day</b> · tides predicted from the same constants; wind and waves are the model's hindcast, not what was forecast at the time.</p>` : "";
   $("#summary").innerHTML = `
+    ${histNote}
     ${alerts.map((h) => `<p class="alert">NWS: ${esc(h)}</p>`).join("")}
     <div class="stats">
       <div class="stat"><div class="k">Tide</div><div class="v">${esc(ts.label)}${meter(tideLevel(ts.ratio))}</div>
@@ -312,7 +325,7 @@ function renderWeather() {
   const d = brief.days[dayIdx];
   const wz = dayWeather(d);
   if (!wz) {
-    $("#weather").innerHTML = `<div class="card-head"><h2>Sea state</h2></div><p class="empty">${brief.weather ? "Wind and wave forecast covers the next 7 days only. Tides above are still valid." : "No weather data downloaded yet."}</p>`;
+    $("#weather").innerHTML = `<div class="card-head"><h2>Sea state</h2></div><p class="empty">${d.history ? "No wind and wave hindcast saved for this day." : brief.weather ? "Wind and wave forecast covers the next 7 days only. Tides above are still valid." : "No weather data downloaded yet."}</p>`;
     return;
   }
   const rows = wz.map((z) => `<tr><td>${esc(z.name)}</td>
@@ -320,9 +333,9 @@ function renderWeather() {
     <td class="num"><span class="wx">${arrow(toDeg(z.swell_dir_deg, z.swell_dir))}${z.swell_max_m ?? "–"}</span><small>${esc(z.swell_dir ?? "")} · ${z.swell_period_s != null ? Math.round(z.swell_period_s) : "–"} s</small></td>
     <td class="num"><span class="wx">${z.wave_max_m ?? "–"}</span></td></tr>`).join("");
   const rain = wz[0]?.rain_prev24_mm;
-  $("#weather").innerHTML = `<div class="card-head"><h2>Sea state · 06–18 max</h2></div>
+  $("#weather").innerHTML = `<div class="card-head"><h2>Sea state · 06–18 max${d.history ? " · hindcast" : ""}</h2></div>
     <table class="wxt"><thead><tr><th>Area</th><th>Wind</th><th>Swell</th><th>Waves</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="note">Wind kn (mean/gust), swell and waves m; arrows point where it is going. Model forecast (Open-Meteo / DWD), updated ${esc(brief.weather.generated_at)}. ${rain != null ? `Rain previous 24 h: ${rain} mm.` : ""} Ocean-current model is too coarse for channels, so it is not used.</p>`;
+    <p class="note">Wind kn (mean/gust), swell and waves m; arrows point where it is going. ${d.history ? "Model hindcast for a past day" : "Model forecast"} (Open-Meteo / DWD), updated ${esc(brief.weather.generated_at)}. ${rain != null ? `Rain previous 24 h: ${rain} mm.` : ""} Ocean-current model is too coarse for channels, so it is not used.</p>`;
 }
 function renderNWS() {
   const n = brief.nws;
@@ -401,6 +414,8 @@ function renderLogSites() {
   sel.innerHTML = brief.sites.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("") + `<option value="other">Other (put name in notes)</option>`;
   const f = $("#logForm");
   if (!f.date.value) f.date.value = palauNow().date;
+  const hist = brief.days.find((d) => d.history);
+  if (hist) f.date.min = hist.date;
 }
 /* Freeze the conditions at the moment a dive is saved. The brief only holds yesterday onward,
    so this is the only chance to keep the forecast that was in hand for that dive. */
@@ -412,7 +427,7 @@ function snapshot(siteId, date, time) {
   const mins = tToMin(time);
   const abs = (dt, hm) => Date.parse(`${dt}T${hm}:00+09:00`);
   const t = abs(date, time);
-  const ctx = { v: 1, src: "forecast" };
+  const ctx = { v: 1, src: day.history ? "hindcast" : "forecast" };
 
   // Malakal tide stage
   const ext = brief.days.flatMap((d) => d.events.map((e) => ({ ...e, ts: abs(d.date, e.time) }))).sort((a, b) => a.ts - b.ts);
@@ -479,20 +494,28 @@ function renderLogs() {
     const ls = store.get(LOG_KEY, []); ls.splice(+b.dataset.del, 1); store.set(LOG_KEY, ls); renderLogs();
   });
 }
+const pad2 = (n) => String(n).padStart(2, "0");
 function initLogForm() {
   const f = $("#logForm");
+  // 24-hour entry time (iOS shows AM/PM in a native time field, so two pickers instead)
+  f.hh.innerHTML += Array.from({ length: 24 }, (_, h) => `<option>${pad2(h)}</option>`).join("");
+  f.mm.innerHTML = Array.from({ length: 12 }, (_, i) => `<option>${pad2(i * 5)}</option>`).join("");
   const picked = {};
   f.querySelectorAll(".seg").forEach((g) => g.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    const again = g.hasAttribute("data-toggle") && b.getAttribute("aria-pressed") === "true";
     g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false"));
+    if (again) { delete picked[g.dataset.name]; return; } // tap again to clear the +/−
     b.setAttribute("aria-pressed", "true"); picked[g.dataset.name] = b.dataset.v;
   })));
   f.addEventListener("submit", (e) => {
     e.preventDefault();
-    const l = { site: f.site.value, date: f.date.value, time: f.time.value, dir: picked.dir, str: picked.str,
+    // strength with optional modifier: "1-" a bit weaker than 1, "3+" stronger than 3 ("0-" makes no sense)
+    const str = picked.str == null ? undefined : picked.str + (picked.mod && !(picked.str === "0" && picked.mod === "-") ? picked.mod : "");
+    const l = { site: f.site.value, date: f.date.value, time: `${f.hh.value}:${f.mm.value}`, dir: picked.dir, str,
       vis: f.vis.value, match: f.match.value, notes: f.notes.value.trim() };
     l.ctx = snapshot(l.site, l.date, l.time);
     const ls = store.get(LOG_KEY, []); ls.push(l); store.set(LOG_KEY, ls);
-    f.time.value = ""; f.vis.value = ""; f.notes.value = ""; f.match.value = "";
+    f.hh.value = ""; f.mm.value = "00"; f.vis.value = ""; f.notes.value = ""; f.match.value = "";
     f.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", "false"));
     for (const k in picked) delete picked[k];
     renderLogs();
