@@ -38,11 +38,11 @@ def west_waves() -> pd.Series:
 
 
 def build_table(data: Path, code_out="OUT1", code_ctrl="CTRL", var="red_gc") -> pd.DataFrame:
-    sc = pd.read_csv(data / "scenes.csv")
+    sc = pd.concat([pd.read_csv(data / f"scenes_{c}.csv").assign(channel=c) for c in ("ulong", "german")])
     bs = pd.read_csv(data / "box_stats.csv")
     bs = bs[bs["valid_frac"] >= MIN_VALID]
     wide = bs.pivot_table(index=["id", "channel"], columns="code", values=var)
-    wide = wide.reset_index().merge(sc, on="id", how="left")
+    wide = wide.reset_index().merge(sc, on=["id", "channel"], how="left")
     if code_out in wide and code_ctrl in wide:
         wide["plume"] = wide[code_out] - wide[code_ctrl]
     wide["theta"] = 2 * np.pi * wide["min_from_hw"] / M2_MIN  # 0 = Malakal high water, >0 after
