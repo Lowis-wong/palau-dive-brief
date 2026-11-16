@@ -1,0 +1,59 @@
+name: Analysis project 3 (Sentinel-2 channel plumes)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pass:
+        description: "Which pass to run (pass1 or pass2)"
+        default: "pass1"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/analysis_p3/**"
+      - "analysis/project3/boxes.geojson"
+      - ".github/workflows/analysis-p3.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analysis-p3
+  cancel-in-progress: true
+
+jobs:
+  p3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch -q --depth 1 origin analysis-data:refs/remotes/origin/analysis-data
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas rasterio pystac-client
+      - name: Choose pass
+        id: which
+        run: |
+          P="${{ github.event.inputs.pass }}"
+          if [ -z "$P" ]; then
+            if [ -f scripts/analysis_p3/RUN ]; then P=$(cat scripts/analysis_p3/RUN); else P=pass1; fi
+          fi
+          echo "pass=$P" >> "$GITHUB_OUTPUT"; echo "Running $P"
+      - name: Run
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          python scripts/analysis_p3/${{ steps.which.outputs.pass }}.py "$RUNNER_TEMP/out/project3" 2>&1 | tee "$RUNNER_TEMP/run.log"
+      - name: Publish to analysis-data branch
+        if: always()
+        run: |
+          git clone -q --depth 1 --branch analysis-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/pub" || exit 0
+          mkdir -p "$RUNNER_TEMP/out/project3"
+          cp "$RUNNER_TEMP/run.log" "$RUNNER_TEMP/out/project3/log_${{ steps.which.outputs.pass }}.txt" || true
+          mkdir -p "$RUNNER_TEMP/pub/project3"
+          cp -r "$RUNNER_TEMP/out/project3/." "$RUNNER_TEMP/pub/project3/"
+          cd "$RUNNER_TEMP/pub"
+          git add -A
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "Project 3 ${{ steps.which.outputs.pass }} (run ${{ github.run_id }})" || exit 0
+          git push -q origin analysis-data
