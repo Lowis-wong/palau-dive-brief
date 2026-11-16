@@ -1,0 +1,59 @@
+name: Analysis project 10 (satellite bathymetry + moorings)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pass:
+        description: "Which pass to run (pilot, ...)"
+        default: "pilot"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/analysis_p10/**"
+      - ".github/workflows/analysis-p10.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analysis-p10
+  cancel-in-progress: true
+
+jobs:
+  p10:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch -q --depth 1 origin analysis-data:refs/remotes/origin/analysis-data
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy pandas scipy rasterio pystac-client pyproj matplotlib geopandas pyarrow sliderule
+      - name: Choose pass
+        id: which
+        run: |
+          P="${{ github.event.inputs.pass }}"
+          if [ -z "$P" ]; then
+            if [ -f scripts/analysis_p10/RUN ]; then P=$(cat scripts/analysis_p10/RUN); else P=pilot; fi
+          fi
+          echo "pass=$P" >> "$GITHUB_OUTPUT"; echo "Running $P"
+      - name: Run
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/out"
+          python scripts/analysis_p10/${{ steps.which.outputs.pass }}.py "$RUNNER_TEMP/out/project10" 2>&1 | tee "$RUNNER_TEMP/run.log"
+      - name: Publish to analysis-data branch
+        if: always()
+        run: |
+          git clone -q --depth 1 --branch analysis-data \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/pub" || exit 0
+          mkdir -p "$RUNNER_TEMP/out/project10"
+          cp "$RUNNER_TEMP/run.log" "$RUNNER_TEMP/out/project10/log_${{ steps.which.outputs.pass }}.txt" || true
+                    mkdir -p "$RUNNER_TEMP/pub/project10"
+          cp -r "$RUNNER_TEMP/out/project10/." "$RUNNER_TEMP/pub/project10/"
+          cd "$RUNNER_TEMP/pub"
+          git add -A
+          git -c user.name="dive-brief-bot" -c user.email="dive-brief-bot@users.noreply.github.com" \
+            commit -q -m "Project 10 ${{ steps.which.outputs.pass }} (run ${{ github.run_id }})" || exit 0
+          git push -q origin analysis-data
