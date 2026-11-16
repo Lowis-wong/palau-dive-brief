@@ -13,32 +13,32 @@
    "properties": {
     "channel": "ulong",
     "code": "IN",
-    "note": "deep hole on the lagoon side of the channel",
-    "status": "draft"
+    "note": "centre of the channel ~650 m inside the mouth (deep band 805380-805490 at x=417300), moved 2026-11-16 after Lowis review",
+    "status": "reviewed (moved)"
    },
    "geometry": {
     "type": "Polygon",
     "coordinates": [
      [
       [
-       417485.0,
-       805860.0
+       417240.0,
+       805405.0
       ],
       [
-       417635.0,
-       805860.0
+       417360.0,
+       805405.0
       ],
       [
-       417635.0,
-       805960.0
+       417360.0,
+       805465.0
       ],
       [
-       417485.0,
-       805960.0
+       417240.0,
+       805465.0
       ],
       [
-       417485.0,
-       805860.0
+       417240.0,
+       805405.0
       ]
      ]
     ]
@@ -50,7 +50,7 @@
     "channel": "ulong",
     "code": "OUT1",
     "note": "~300 m west of the mouth, beyond the wall",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -86,7 +86,7 @@
     "channel": "ulong",
     "code": "OUT2",
     "note": "~1.1 km west of the mouth",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -122,7 +122,7 @@
     "channel": "ulong",
     "code": "CTRL",
     "note": "open water ~2.7 km WSW, off the plume line",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -158,7 +158,7 @@
     "channel": "ulong",
     "code": "AXIS",
     "note": "lagoon end -> mouth -> 1.7 km offshore",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "LineString",
@@ -187,32 +187,32 @@
    "properties": {
     "channel": "german",
     "code": "IN",
-    "note": "deep groove between the cut and the mouth",
-    "status": "draft"
+    "note": "centre of the deep groove inside the mouth (median red <0.012), moved 2026-11-16 after Lowis review",
+    "status": "reviewed (moved)"
    },
    "geometry": {
     "type": "Polygon",
     "coordinates": [
      [
       [
-       419870.0,
-       787480.0
+       420080.0,
+       787470.0
       ],
       [
-       419990.0,
-       787480.0
+       420240.0,
+       787470.0
       ],
       [
-       419990.0,
-       787560.0
+       420240.0,
+       787570.0
       ],
       [
-       419870.0,
-       787560.0
+       420080.0,
+       787570.0
       ],
       [
-       419870.0,
-       787480.0
+       420080.0,
+       787470.0
       ]
      ]
     ]
@@ -224,7 +224,7 @@
     "channel": "german",
     "code": "OUT1",
     "note": "deep bay ~550 m SW of the mouth",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -260,7 +260,7 @@
     "channel": "german",
     "code": "OUT2",
     "note": "deep bay ~1.3 km SSW of the mouth",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -296,7 +296,7 @@
     "channel": "german",
     "code": "CTRL",
     "note": "outer part of the bay ~3.8 km SW, toward the open ocean",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "Polygon",
@@ -332,7 +332,7 @@
     "channel": "german",
     "code": "AXIS",
     "note": "lagoon -> cut -> mouth -> bay",
-    "status": "draft"
+    "status": "reviewed"
    },
    "geometry": {
     "type": "LineString",
