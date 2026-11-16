@@ -128,6 +128,7 @@ def composites(aoi_key, items, out: Path, scenes: pd.DataFrame):
     med = {b: np.nanmedian(S[b], axis=0) for b in S}
     rgb = np.stack([med["red"], med["green"], med["blue"]])
     write_tif(out / aoi_key / "composite_rgb.tif", stretch(rgb), tr, "uint8", nodata=0)
+    np.save(out / aoi_key / "_median_red.npy", med["red"].astype(np.float32))
     p90 = np.nanpercentile(S["red"], 90, axis=0)
     p10 = np.nanpercentile(S["red"], 10, axis=0)
     nval = np.isfinite(S["red"]).sum(0).astype(np.float32)
@@ -148,6 +149,8 @@ def composites(aoi_key, items, out: Path, scenes: pd.DataFrame):
             d.append(np.nanmedian(S[b][eb], 0) - np.nanmedian(S[b][fl], 0))
         d += [np.isfinite(S["red"][eb]).sum(0).astype(np.float32), np.isfinite(S["red"][fl]).sum(0).astype(np.float32)]
         write_tif(out / aoi_key / "ebb_minus_flood.tif", np.stack(d).astype(np.float32), tr, "float32")
+        np.save(out / aoi_key / "_ebb_minus_flood_red.npy", d[0].astype(np.float32))
+        np.save(out / aoi_key / "_ebb_minus_flood_green.npy", d[1].astype(np.float32))
         for name, m in (("flood", fl), ("ebb", eb)):
             g = np.stack([np.nanmedian(S[b][m], 0) for b in ("red", "green", "blue")])
             write_tif(out / aoi_key / f"{name}_rgb.tif", stretch(g), tr, "uint8", nodata=0)
@@ -160,8 +163,8 @@ def pilots(aoi_key, scenes: pd.DataFrame, items_by_id, out: Path):
     rows = []
     for stage, (lo, hi) in (("flood", FLOOD_WIN), ("ebb", EBB_WIN)):
         g = s[s["min_from_hw"].between(lo, hi)].copy()
-        # prefer scenes away from the turn and close to the middle of the matched range band
-        g["score"] = g[f"{aoi_key}_clear"] - (g["range_m"] - 1.1).abs() + g["min_from_hw"].abs() / 600
+        # prefer scenes near peak flow (about 3 h either side of high water) and mid-band range
+        g["score"] = g[f"{aoi_key}_clear"] - (g["range_m"] - 1.1).abs() - (g["min_from_hw"].abs() - 186).abs() / 200
         g = g.sort_values("score", ascending=False).head(10)
         for _, r in g.iterrows():
             it = items_by_id[r["id"]]
