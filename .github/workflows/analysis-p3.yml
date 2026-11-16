@@ -41,6 +41,7 @@ jobs:
           echo "pass=$P" >> "$GITHUB_OUTPUT"; echo "Running $P"
       - name: Run
         run: |
+          set -o pipefail
           mkdir -p "$RUNNER_TEMP/out"
           python scripts/analysis_p3/${{ steps.which.outputs.pass }}.py "$RUNNER_TEMP/out/project3" 2>&1 | tee "$RUNNER_TEMP/run.log"
       - name: Publish to analysis-data branch

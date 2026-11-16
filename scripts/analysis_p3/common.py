@@ -55,26 +55,46 @@ def log(*a):
 
 
 # ---------------------------------------------------------------- STAC
-def search_items(start="2017-01-01", end=None, max_cloud=90) -> list[dict]:
+def search_items(start_year=2017, max_cloud=90) -> list[dict]:
+    """Search year by year (small pages, retries); the API sometimes returns 500 on large requests."""
     from pystac_client import Client
-    end = end or datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    cl = Client.open(STAC)
     lon0, lat0, lon1, lat1 = 134.20, 7.10, 134.31, 7.31
-    s = cl.search(collections=[COLLECTION], bbox=[lon0, lat0, lon1, lat1], datetime=f"{start}/{end}",
-                  query={"eo:cloud_cover": {"lt": max_cloud}}, max_items=20000, limit=500)
-    out = []
-    for it in s.items_as_dicts():
-        p = it["properties"]
-        tile = f'{p.get("mgrs:utm_zone")}{p.get("mgrs:latitude_band")}{p.get("mgrs:grid_square")}'
-        out.append({
-            "id": it["id"], "datetime": p["datetime"], "tile": tile,
-            "platform": p.get("platform"), "cloud": p.get("eo:cloud_cover"),
-            "baseline": p.get("s2:processing_baseline"),
-            "boa_offset_applied": p.get("earthsearch:boa_offset_applied"),
-            "updated": p.get("updated") or p.get("created"),
-            "nodata_pct": p.get("s2:nodata_pixel_percentage"),
-            "assets": {k: it["assets"][v]["href"] for k, v in BANDS.items() if v in it["assets"]},
-        })
+    out, seen = [], set()
+    now = datetime.now(timezone.utc)
+    for y in range(start_year, now.year + 1):
+        for half in ((f"{y}-01-01", f"{y}-06-30T23:59:59Z"), (f"{y}-07-01", f"{y}-12-31T23:59:59Z")):
+            for attempt in range(5):
+                try:
+                    cl = Client.open(STAC)
+                    s = cl.search(collections=[COLLECTION], bbox=[lon0, lat0, lon1, lat1],
+                                  datetime=f"{half[0]}/{half[1]}", limit=100)
+                    got = list(s.items_as_dicts())
+                    break
+                except Exception as e:  # noqa: BLE001
+                    log("search retry", half, attempt, str(e)[:100])
+                    time.sleep(5 * (attempt + 1))
+            else:
+                log("search failed", half)
+                continue
+            n0 = len(out)
+            for it in got:
+                if it["id"] in seen:
+                    continue
+                seen.add(it["id"])
+                p = it["properties"]
+                if (p.get("eo:cloud_cover") or 0) >= max_cloud:
+                    continue
+                tile = f'{p.get("mgrs:utm_zone")}{p.get("mgrs:latitude_band")}{p.get("mgrs:grid_square")}'
+                out.append({
+                    "id": it["id"], "datetime": p["datetime"], "tile": tile,
+                    "platform": p.get("platform"), "cloud": p.get("eo:cloud_cover"),
+                    "baseline": p.get("s2:processing_baseline"),
+                    "boa_offset_applied": p.get("earthsearch:boa_offset_applied"),
+                    "updated": p.get("updated") or p.get("created"),
+                    "nodata_pct": p.get("s2:nodata_pixel_percentage"),
+                    "assets": {k: it["assets"][v]["href"] for k, v in BANDS.items() if v in it["assets"]},
+                })
+            log("search", half[0], len(got), "kept", len(out) - n0)
     return out
 
 
