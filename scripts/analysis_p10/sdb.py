@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parent.parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "analysis_p3"))
 from aoi import WEST_UTM  # noqa: E402
@@ -74,6 +75,16 @@ def load_cells(mllw: float) -> pd.DataFrame:
     from scipy import ndimage
     nb = ndimage.convolve(occ, np.ones((7, 7), np.int16), mode="constant")
     c = c[nb[c["iy"], c["ix"]] >= 4].reset_index(drop=True)
+    # false shallow bottoms: one 2019 daytime pass (RGT 856) reports a ~1 m "bottom" along ~20 km of deep lagoon.
+    # A real 0-3 m bottom is bright in green (>= 0.07 in the multi-year median); deep water is ~0.02.
+    ref = REPO / "analysis/project10/ref/green_median_v1.tif"
+    if ref.exists():
+        import rasterio
+        with rasterio.open(ref) as ds:
+            g = ds.read(1)[c["iy"], c["ix"]] / 1e4
+        bad = (c["depth"] < 3) & (g < 0.05)
+        S["dropped_dark_shallow_cells"] = int(bad.sum())
+        c = c[~bad].reset_index(drop=True)
     # folds: lines balanced by cell count
     lines = c.groupby("line").size().sort_values(ascending=False)
     folds, load = {}, [0, 0, 0, 0]
