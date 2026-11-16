@@ -68,10 +68,46 @@ def part_a(out: Path, wl: pd.Series, models: dict, mllw: float):
     from pyproj import Transformer
     from sliderule import sliderule
 
+    from sliderule import earthdata
+    import geopandas as gpd
+
     sliderule.init(verbose=False)
     lon0, lat0, lon1, lat1 = WEST_LONLAT
-    log("ATL24: requesting", WEST_LONLAT)
-    gdf = sliderule.run("atl24x", {"atl24": {"compact": False}}, aoi=[lon0, lat0, lon1, lat1])
+    poly = [{"lon": lon0, "lat": lat0}, {"lon": lon1, "lat": lat0}, {"lon": lon1, "lat": lat1},
+            {"lon": lon0, "lat": lat1}, {"lon": lon0, "lat": lat0}]
+    granules = earthdata.ams(short_name="ATL24", polygon=poly)
+    if isinstance(granules, dict):
+        granules = list(granules)
+    granules = sorted(set(granules or []))
+    log("ATL24: granules", len(granules))
+    stats = {"granules": len(granules), "ok": 0, "empty": 0, "failed": []}
+
+    def one(res):
+        for parms in ({"atl24": {"compact": False}}, {}):
+            try:
+                g = sliderule.run("atl24x", dict(parms, poly=poly), resources=[res])
+                if g is None:
+                    continue
+                return res, g
+            except Exception as e:  # noqa: BLE001
+                err = str(e)[:150]
+        return res, None
+
+    parts = []
+    with ThreadPoolExecutor(4) as ex:
+        for res, g in ex.map(one, granules):
+            if g is None:
+                stats["failed"].append(res)
+            elif len(g) == 0:
+                stats["empty"] += 1
+            else:
+                stats["ok"] += 1
+                g = g.copy()
+                g["granule"] = res
+                parts.append(g)
+    log("ATL24: granule stats", {k: (v if not isinstance(v, list) else len(v)) for k, v in stats.items()})
+    SUMMARY["atl24_granules"] = stats
+    gdf = gpd.GeoDataFrame(pd.concat(parts)) if parts else gpd.GeoDataFrame()
     log("ATL24: rows", len(gdf), "columns", list(gdf.columns))
     if len(gdf) == 0:
         SUMMARY["atl24"] = {"n_rows": 0}
@@ -103,7 +139,7 @@ def part_a(out: Path, wl: pd.Series, models: dict, mllw: float):
     df["beam_id"] = df["pass_id"] + "_" + df["spot"].astype(int).astype(str)
     keep = [c for c in ["time_utc", "lat", "lon", "x", "y", "ortho_h", "surface_h", "depth_inst", "level_m", "level_src",
                         "depth_mllw", "confidence", "rgt", "cycle", "spot", "gt", "pass_id", "beam_id", "night_flag",
-                        "sigma_tvu", "sigma_thu", "kd", "surface_roughness", "quality_ph"] if c in df]
+                        "sigma_tvu", "sigma_thu", "kd", "surface_roughness", "quality_ph", "granule"] if c in df]
     df[keep].to_csv(out / "atl24_points.csv.gz", index=False, float_format="%.4f")
 
     s: dict = {"n_rows": int(len(df)), "mllw_station_datum_m": round(mllw, 3),
