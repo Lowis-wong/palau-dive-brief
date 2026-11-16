@@ -42,6 +42,7 @@ FIT_MIN_R2 = 0.6
 GREEN_RANGE = (1.0, 22.0)  # target (instantaneous) depth range used to fit the green model
 RED_RANGE = (0.0, 6.0)
 BLEND = (2.0, 3.5)
+GREEN_DEG = 2             # depth = quadratic in pG, depth-balanced weights (v1 linear unweighted compressed depths > 8 m)
 ATL24_URL = "https://raw.githubusercontent.com/Lowis-wong/palau-dive-brief/analysis-data/project10/atl24_points.csv.gz"
 S: dict = {"started": datetime.now(timezone.utc).isoformat(timespec="seconds"), "grid": [X0, Y0, X1, Y1, W, H]}
 
@@ -64,7 +65,9 @@ def load_cells(mllw: float) -> pd.DataFrame:
     c = d.groupby(["iy", "ix"]).agg(depth=("depth_mllw", "median"), n=("depth_mllw", "size"),
                                      sd=("depth_mllw", "std"), line=("line", lambda s: s.mode().iat[0]),
                                      passes=("pass_id", "nunique")).reset_index()
-    c = c[(c["n"] >= 3) & (c["sd"].fillna(0) < 1.0)].reset_index(drop=True)
+    # deep returns are sparse (median 1-2 photons per 10 m cell), so single-photon cells are kept;
+    # false bottoms in deep water are removed by the isolation test below instead
+    c = c[c["sd"].fillna(0) < 1.5].reset_index(drop=True)
     # isolated cells (likely false bottoms in deep water): need >= 3 other cells within 30 m
     occ = np.zeros((H, W), np.int16)
     occ[c["iy"], c["ix"]] = 1
@@ -129,29 +132,46 @@ def read_scene(group):
 
 
 # ------------------------------------------------------------------ per-scene processing
-def robust_fit(x, y, iters=3):
+def depth_weights(y, bin_m=1.0, floor=20):
+    """Equalise the influence of each 1 m depth bin (calibration cells are ~60 % shallower than 2 m)."""
+    b = np.floor(y / bin_m).astype(int)
+    _, inv, cnt = np.unique(b, return_inverse=True, return_counts=True)
+    return 1.0 / np.maximum(cnt[inv], floor)
+
+
+def robust_fit(x, y, iters=3, deg=1, weighted=False):
     m = np.isfinite(x) & np.isfinite(y)
     x, y = x[m], y[m]
     keep = np.ones(len(x), bool)
+    coef = None
     for _ in range(iters):
         if keep.sum() < 30:
             return None
-        A = np.vstack([x[keep], np.ones(keep.sum())]).T
-        coef, *_ = np.linalg.lstsq(A, y[keep], rcond=None)
-        r = y - (coef[0] * x + coef[1])
+        w = depth_weights(y[keep]) if weighted else np.ones(keep.sum())
+        coef = np.polyfit(x[keep], y[keep], deg, w=np.sqrt(w))
+        r = y - np.polyval(coef, x)
         s = 1.4826 * np.median(np.abs(r[keep] - np.median(r[keep])))
         keep = np.abs(r) < max(3 * s, 0.5)
-    r = y[keep] - (coef[0] * x[keep] + coef[1])
+    r = y[keep] - np.polyval(coef, x[keep])
     r2 = 1 - np.var(r) / np.var(y[keep])
-    return {"m1": float(coef[0]), "m0": float(coef[1]), "n": int(keep.sum()), "rmse": float(np.sqrt(np.mean(r ** 2))),
-            "r2": float(r2), "kept_frac": float(keep.mean())}
+    out = {"coef": [float(v) for v in coef], "n": int(keep.sum()), "rmse": float(np.sqrt(np.mean(r ** 2))),
+           "r2": float(r2), "kept_frac": float(keep.mean()), "xmin": float(np.percentile(x[keep], 0.5)),
+           "xmax": float(np.percentile(x[keep], 99.5))}
+    # slope at the low end of the fitted range (must be positive: deeper -> larger ratio)
+    out["m1"] = float(np.polyval(np.polyder(coef), out["xmin"])) if deg > 1 else float(coef[0])
+    if deg > 1:
+        # quadratic must stay monotonic over the calibrated range
+        xs = np.linspace(out["xmin"], out["xmax"], 50)
+        out["monotonic"] = bool(np.all(np.polyval(np.polyder(coef), xs) > 0))
+    return out
 
 
 def predict(pg, pr, fg, fr):
-    dg = fg["m1"] * pg + fg["m0"]
+    # clamp the ratio to the calibrated range so a quadratic cannot run away
+    dg = np.polyval(fg["coef"], np.clip(pg, fg["xmin"], fg["xmax"] + 0.02))
     if fr is None:
         return dg
-    dr = fr["m1"] * pr + fr["m0"]
+    dr = np.polyval(fr["coef"], pr)
     # switch on the red estimate (Caballero & Stumpf 2020), but never use red where green says > 8 m:
     # the red band is pure noise once the bottom is deeper than a few metres
     w = np.clip((dr - BLEND[0]) / (BLEND[1] - BLEND[0]), 0, 1)  # 0 -> red, 1 -> green
@@ -162,7 +182,9 @@ def predict(pg, pr, fg, fr):
 
 def fit_scene(pg, pr, target, cells_mask):
     g = cells_mask & np.isfinite(pg) & (target >= GREEN_RANGE[0]) & (target <= GREEN_RANGE[1])
-    fg = robust_fit(pg[g], target[g])
+    fg = robust_fit(pg[g], target[g], deg=GREEN_DEG, weighted=True)
+    if fg is not None and GREEN_DEG > 1 and not fg.get("monotonic", True):
+        fg = robust_fit(pg[g], target[g], deg=1, weighted=True)
     r = cells_mask & np.isfinite(pr) & (target >= RED_RANGE[0]) & (target <= RED_RANGE[1])
     fr = robust_fit(pr[r], target[r]) if r.sum() >= 50 else None
     if fr is not None and (fr["r2"] < 0.3 or fr["m1"] <= 0):
@@ -170,7 +192,7 @@ def fit_scene(pg, pr, target, cells_mask):
     return fg, fr
 
 
-def process(item_date, data, cells, h_rel, stacks, k_scene, cv_pred):
+def process(item_date, data, cells, h_rel, stacks, k_scene, cv_pred, dump):
     b2, b3, b4, b8, b11, scl = (data[k] for k in ("blue", "green", "red", "nir", "swir16", "scl"))
     have = data["_have"]
     bad = ~have | np.isin(scl, list(SCL_BAD))
@@ -223,6 +245,12 @@ def process(item_date, data, cells, h_rel, stacks, k_scene, cv_pred):
     target = cells["depth"].values + h_rel
     cm = ok[iy, ix] & ~od[iy, ix]
     rec["cal_cells"] = int(cm.sum())
+    j = dump["n"]
+    dump["pg"][j], dump["pr"][j] = pg_c, pr_c
+    dump["valid"][j] = cm
+    dump["h"][j] = h_rel
+    dump["date"].append(item_date)
+    dump["n"] += 1
     fg, fr = fit_scene(pg_c, pr_c, target, cm)
     rec["fit_green"], rec["fit_red"] = fg, fr
     if fg is None or fg["n"] < FIT_MIN_N or fg["r2"] < FIT_MIN_R2 or fg["m1"] <= 0:
@@ -321,6 +349,8 @@ def main():
               "deepflag": np.lib.format.open_memmap(tmp / "flag.npy", "w+", np.uint8, (N, H, W)),
               "rgb": np.lib.format.open_memmap(tmp / "rgb.npy", "w+", np.uint8, (N, 3, H, W))}
     cv_pred = np.full((N, len(cells)), np.nan, np.float32)
+    dump = {"pg": np.full((N, len(cells)), np.nan, np.float16), "pr": np.full((N, len(cells)), np.nan, np.float16),
+            "valid": np.zeros((N, len(cells)), bool), "h": np.zeros(N, np.float32), "date": [], "n": 0}
     recs, k = [], 0
 
     def batched():
@@ -341,7 +371,7 @@ def main():
             lev, src = level_at(t, wl, models)
             h_rel = float(lev[0] - mllw)
             try:
-                rec = process(d, data, cells, h_rel, stacks, k, cv_pred)
+                rec = process(d, data, cells, h_rel, stacks, k, cv_pred, dump)
             except Exception:  # noqa: BLE001
                 rec = {"date": d, "reject": "error", "trace": traceback.format_exc()[-600:]}
             rec.update({"time_utc": str(t[0]), "h_above_mllw": round(h_rel, 3), "level_src": src[0],
@@ -362,6 +392,9 @@ def main():
         if isinstance(r.get("slopes"), dict):
             f.update({f"glint_slope_{a}": b for a, b in r["slopes"].items()})
         flat.append(f)
+    nd = dump["n"]
+    np.savez_compressed(out / "cells_ratios.npz", pg=dump["pg"][:nd], pr=dump["pr"][:nd], valid=dump["valid"][:nd],
+                        h=dump["h"][:nd], date=np.array(dump["date"]))
     sc = pd.DataFrame(flat)
     sc.to_csv(out / "scenes_sdb.csv", index=False, float_format="%.5f")
     S["scenes"] = {"read": len(recs), "accepted": k,
