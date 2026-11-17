@@ -2,7 +2,7 @@
 
 > 本文件是项目 10 的总入口和工作日志，按时间记录每一步做了什么、为什么、用了哪次提交和哪次运行、结果在哪里。  
 > 分阶段的详细文档在 `docs/`，代码在 `scripts/analysis_p10/`，数据在 `analysis-data` 分支 `project10/`。  
-> 最后更新：2026-11-17
+> 最后更新：2026-11-17 20:20
 
 ---
 
@@ -14,7 +14,7 @@
 | 范围 | 东经 134.19–134.30，北纬 7.10–7.33；UTM 53N（EPSG:32653）410500–422800 E，784800–810300 N；10 m 网格 1230 × 2550 |
 | 方法 | Sentinel-2 逐景"蓝/绿、蓝/红对数比值"（Stumpf 2003），用 ICESat-2 ATL24 激光测深点逐景标定，多景取中位数（Caballero & Stumpf 多景法） |
 | 垂直基准 | MLLW，由 Malakal（UHSLC 007）2007–2025 实测算出，= 站点基准 0.832 m；与 CRRF 多波束数据同一基准 |
-| 当前状态 | 阶段 A–E 完成，关卡 1、2 通过；阶段 F（浮球）进行中；G（实测对比）等记录；H（正式出图）未开始 |
+| 当前状态 | 阶段 A–E 完成，关卡 1、2 通过；阶段 F 候选点 v1 完成（52 个，A 级 14 个），等 Lowis 核对；G（实测对比）等记录；H（正式出图）未开始 |
 | 精度（0–15 m，留出轨道检验） | 偏差 +0.24 m，均方根误差 0.95 m |
 | 局限 | 15–20 m 偏浅约 1.3 m；20 m 以下不可信；暗底（海草、密集珊瑚）偏深 1–1.5 m；不能用于导航 |
 
@@ -30,6 +30,7 @@
 | `02-plan.md` | 详细大纲：阶段 A–I、关卡、浮球三个来源、出图规格 | 2026-11-16（同日修订） |
 | `03-pilot.md` | 试跑结果（关卡 1）：ATL24 盘点、停泊船只试验 | 2026-11-16 |
 | `04-sdb-results.md` | 阶段 C–E 结果（v3）：精度表、模型比较、怎么读图 | 2026-11-17 |
+| `05-moorings-candidates.md` | 阶段 F 浮球候选点 v1：方法、参数、结果表、注意事项 | 2026-11-17 |
 
 这些文档同时存在 claude.ai 项目「帕劳潜水」里（`claude/project10-*.md`），内容一致。
 
@@ -43,6 +44,7 @@
 | `sdb.py` | 阶段 C–E：逐景处理、标定、留出检验、合成 | `sdb` |
 | `model_compare.py` | 本地模型比较（用 v2 导出的 `cells_ratios.npz`），不在工作流里跑 | — |
 | `derive.py` | 阶段 E 后处理：质量分级、显示用水深、不确定度、山体阴影、等深线、ATL24 点图层 | `derive` |
+| `boats.py` | 阶段 F：四个潜点的停泊船检测和浮球候选点 | `boats` |
 | `RUN` | 推送时工作流跑哪个 pass | — |
 
 复用项目 3 的 `scripts/analysis_p3/common.py`：STAC 检索（AWS Earth Search）、去重、窗口读取、SCL 云掩膜、DN 偏移（处理基线 ≥ 04.00 减 1000）、潮汐调和拟合。
@@ -66,6 +68,9 @@
 | `sdb/cells_ratios.npz` | 每景在标定格子上的比值（用于本地模型比较） | `sdb` |
 | `sdb/scenes_sdb.csv`、`screen.csv`、`summary.json` | 每景拟合参数、初筛结果、汇总 | `sdb` |
 | `products/` | 出图用产品（见第 4.5 节） | `derive` |
+| `moorings/candidates.csv`、`candidates.gpkg` | 浮球候选点（52 个，分 A/B/C） | `boats` |
+| `moorings/<潜点>/` | `detections.csv`、`density.tif`、`composite_tci.tif`、`chips.png` | `boats` |
+| `moorings/summary.json`、`log_boats.txt` | 参数和统计 | `boats` |
 
 参考层（在 `main` 分支）：`analysis/project10/ref/green_median_v1.tif`，v1 合成图的绿光波段，用来剔除假浅底。
 
@@ -79,6 +84,10 @@
 | `sdb_v1_cv_check.png` | v1 的留出检验散点和地图（发现深处被压浅、假浅底） |
 | `v3_overview.png`、`v3_sites.png` | v3 水深预览 |
 | `wayback_compare.png` | v3 与 Lowis 挑选的 Esri Wayback 高清图对照用的裁剪图 |
+| `moorings/map_<潜点>.png` | QGIS 渲染：Esri 底图 + 等深线 + 候选点 |
+| `moorings/chips_<潜点>.png` | 候选点的逐日小图（第 1 列为多年中位数） |
+
+候选点表的副本：`analysis/project10/moorings_candidates_v1.csv`。
 
 ### 1.5 QGIS 工程
 
@@ -106,7 +115,10 @@
 | 11-17 17:46 | — | — | Lowis 用 Esri Wayback 高清图检查，认为没有问题 | 发现蓝角礁墙外有 15–20 m 杂点带 |
 | 11-17 17:49 | `dc31d65` | 44050058806 | 阶段 E 后处理 `derive.py` | 成功；质量好 129 万像素、一般 82 万，去掉孤立小块 2,638 像素，等深线 5,236 条 |
 | 11-17 18:0x | `68b554f`、`5490797` | — | 详细记录（本文件）、`docs/` 整理、`notes/` 镜像全项目文档 | — |
-| 11-17 18:1x | — | — | 建 QGIS 工程时一次性下载卡住 QGIS，MCP 断开；改写成 `qgis_build_project.py`（后台下载） | 等重新连接后执行 |
+| 11-17 18:1x | — | — | 建 QGIS 工程时一次性下载卡住 QGIS，MCP 断开；改写成 `qgis_build_project.py`（后台下载） | — |
+| 11-17 19:58 | `12d218c` | — | QGIS 重新连上：后台下载 14 个文件，`build_project()` 建成 `Palau_Bathymetry_P10.qgz`（16 个图层）；Lowis 授权读取 `~/Backup/Palau_QGIS` 以检查渲染图 | 成功 |
+| 11-17 20:00 | `1e78690` | 44069718778 | 阶段 F：`boats.py` 四个潜点浮球候选 | 52 个候选点（A 14、B 8、C 30）；2 个日期的 53NMJ 文件缺 SCL，自动跳过 |
+| 11-17 20:1x | — | — | 候选点加进 QGIS（替换试跑热点图层），按潜点渲染检查；写 `docs/05-moorings-candidates.md` | 等 Lowis 核对 |
 
 ---
 
@@ -222,7 +234,7 @@
 - 建工程的脚本：`analysis/project10/qgis_build_project.py`（在 QGIS 里运行）。分两步，避免一次调用卡住 QGIS：`start_download()` 在后台下载数据到 `~/Backup/Palau_QGIS/project10/`，`download_status()` 查进度，`build_project()` 建图层、设样式并保存。
 - 11-17 第一次尝试时，在 QGIS 主线程里一次性下载约 45 MB，QGIS 无响应、MCP 连接断开；因此改成后台下载。
 - 图层组（图例从上到下）：
-  - 浮球候选：试跑的停泊船热点（蓝角、德国），橙色星形，标注出现天数
+  - 浮球候选：`moorings/candidates.gpkg`，星形，A 红、B 橙、C 浅黄，标注编号（11-17 20:1x 替换了试跑热点图层）
   - 参考：四个潜点
   - 水深：等深线（5/10/15 m 粗线并标注）、"一般"质量区（白色半透明）、山体阴影（正片叠底）、水深色带（0–18 m+）
   - 检查：不确定度、原始中位数、"看不到底"比例、四分位距、景数（默认隐藏）
@@ -234,6 +246,6 @@
 ---
 
 ## 7. 下一步
-- **阶段 F 浮球**：收紧停泊船检测（只要 1–3 像素小块、剔除杂乱日子、聚类），扩展到四个潜点（图块 53NMJ 管乌龙、西亚斯），出候选点给 Lowis 核对；Koror State 清单；Lowis 挂浮球时拍照（相机开定位）。
+- **阶段 F 浮球**：候选点 v1 已出（`docs/05-moorings-candidates.md`），等 Lowis 核对；Koror State 清单；Lowis 挂浮球时拍照（相机开定位）。确认后写 `moorings.gpkg`。
 - **阶段 G**：浮球锚块深度对比；CRRF DEM（等回信）。
 - **阶段 H 正式出图**：英文标注；底图可以用 Lowis 挑的 Esri Wayback 高清图（需注明 "Esri, Maxar, Earthstar Geographics"），叠我们的等深线、水深色带和浮球。
