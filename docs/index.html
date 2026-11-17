@@ -28,6 +28,8 @@
 <main id="app">
   <section class="card" id="summary"></section>
 
+  <section class="card" id="dayplan" hidden></section>
+
   <section class="card">
     <div class="card-head">
       <h2>Tide · Malakal</h2>
@@ -60,6 +62,13 @@
         <a class="ghost" href="https://www.windy.com/?waves,7.300,134.350,9" target="_blank" rel="noopener">Windy ↗</a>
         <a class="ghost" href="https://www.tide-forecast.com/locations/Malakal-Harbor-Palau-Islands-Caroline-Islands/tides/latest" target="_blank" rel="noopener">Tide Forecast ↗</a>
       </div>
+    </details>
+  </section>
+
+  <section class="card" id="calendar" hidden>
+    <details id="calDetails">
+      <summary><h2>Calendar</h2><span class="sum-hint">best 3-dive plan · each day</span></summary>
+      <div id="calBody"></div>
     </details>
   </section>
 
@@ -120,6 +129,7 @@
   </footer>
 </main>
 
+<script src="planner.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

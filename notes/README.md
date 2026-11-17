@@ -8,7 +8,7 @@
 |---|---|---|
 | `工作历程.md` | 全项目时间线、架构、进度、待办、关键决策 | `palau-dive-brief-工作历程.md`、`claude/work-history.md`（两者内容相同） |
 | `dive-brief-status.md` | 简报 App 的技术状态（英文，另一个对话维护，这里是快照） | `claude/dive-brief-status.md` |
-| `roadmap.md` | 岸上分析项目 1–9 的大纲 | `palau-analysis-roadmap.md` |
+| `roadmap.md` | 岸上分析项目路线图（1–12，11-17 版） | `palau-analysis-roadmap.md` |
 | `lagoon-step1.md` | 潟湖增水 Step 1（数据） | `claude/lagoon-setup-step1.md` |
 | `project2-feasibility.md` | 项目 2 自有潮汐常数的回测 | `claude/project2-feasibility.md` |
 

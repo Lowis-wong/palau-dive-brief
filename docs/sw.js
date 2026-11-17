@@ -1,6 +1,6 @@
 /* Offline support: app shell cache-first, brief.json network-first with cache fallback. */
-const VERSION = "pdb-v12";
-const SHELL = ["./", "index.html", "style.css", "app.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
+const VERSION = "pdb-v13";
+const SHELL = ["./", "index.html", "style.css", "planner.js", "app.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

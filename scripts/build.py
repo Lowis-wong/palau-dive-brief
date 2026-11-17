@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "docs" / "data" / "brief.json"
 SITES = ROOT / "data" / "sites.json"
 CONSTANTS = ROOT / "data" / "tide_constants.json"
+PLAN = ROOT / "data" / "plan.json"  # 3-dive day plan + calendar settings (Project 4), used by docs/planner.js
 PALAU = timezone(timedelta(hours=9))
 STATION = "1841367"
 DAYS_AHEAD = 35
@@ -517,6 +518,7 @@ def main() -> None:
         "generated_at": now.strftime("%Y-%m-%d %H:%M"), "timezone": "Palau (UTC+9)",
         "station": {"name": "Malakal Harbor", "id": STATION, "datum": "MLLW"},
         "status": status, "sites": site_meta,
+        "plan_config": json.loads(PLAN.read_text()) if PLAN.exists() else None,
         "days": out_days, "weather": weather, "nws": nws,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

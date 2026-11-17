@@ -1,0 +1,33 @@
+{
+  "_readme": "Settings for the 3-dive day plan and the calendar (Project 4). All times in minutes unless noted. Edit freely: the app reads these from brief.json after the next build. Scores are 0-10 for one 10-minute state of the current at a site, indexed by flow level 1-5 (the per-site level shown in the app). They are first guesses and should be tuned to what Lowis and the captains actually want.",
+  "depart": "08:30",
+  "depart_options": ["08:00", "08:30", "09:00"],
+  "dives": 3,
+  "dive_min": 50,
+  "entry_buffer_min": 5,
+  "surface_min": 60,
+  "lunch_after_dive": 2,
+  "lunch_surface_min": 90,
+  "max_wait_min": 60,
+  "last_entry": "15:00",
+  "score_window_min": 40,
+  "allow_repeat": false,
+  "travel_min": {
+    "_note": "Harbor to Ulong 45 and to Blue Corner 55 from Lowis (2026-11-17). Everything else estimated from straight-line distance at the same effective speed (~33 km/h) plus a few minutes, so check and correct.",
+    "harbor": {"blue-corner": 55, "siaes-corner": 50, "ulong-channel": 45, "german-channel": 50},
+    "blue-corner": {"siaes-corner": 36, "ulong-channel": 32, "german-channel": 12},
+    "siaes-corner": {"ulong-channel": 10, "german-channel": 40},
+    "ulong-channel": {"german-channel": 34}
+  },
+  "scores": {
+    "_note": "in / out = Malakal rising / falling shifted by the site lag (corners: direction along the wall not mapped yet). Arrays are flow levels 1..5.",
+    "blue-corner":    {"in": [6, 9, 10, 10, 8], "slack": 5, "out": [6, 6, 5, 4, 3]},
+    "siaes-corner":   {"in": [6, 9, 10, 10, 8], "slack": 4, "out": [5, 4, 3, 3, 2]},
+    "ulong-channel":  {"in": [6, 9, 10, 9, 7],  "slack": 4, "out": [3, 1, 0, 0, 0]},
+    "german-channel": {"in": [6, 9, 10, 9, 8],  "slack": 6, "out": [5, 3, 2, 1, 1]}
+  },
+  "turn_penalty": 1.5,
+  "wave_penalty": [[2.5, 2], [2.0, 1]],
+  "travel_penalty_per_min": 0.01,
+  "wait_penalty_per_min": 0.01
+}

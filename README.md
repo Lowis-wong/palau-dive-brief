@@ -32,8 +32,9 @@ Log dives in the app → **Copy** → paste into the chat. Claude updates `lag_m
 ## Files
 - `data/sites.json` – site library (editable)
 - `data/dive_log.csv` – logged dives
+- `data/plan.json` – 3-dive day plan and calendar settings (travel times, dive length, surface intervals, site scores)
 - `scripts/tides.py` – tide/current logic
 - `scripts/build.py` – fetch + build (`--fixtures tests/fixtures` for offline test)
-- `docs/` – the web app (index.html, app.js, style.css, sw.js)
+- `docs/` – the web app (index.html, app.js, planner.js, style.css, sw.js); `planner.js` builds the day plan and calendar in the app, offline
 - `notes/` – project log (工作历程), status, roadmap and other overview docs (mirrors of the claude.ai project docs); start at `notes/README.md`
 - `analysis/<project>/` – detailed write-up of each analysis project; `scripts/analysis_*` – its code; results on the `analysis-data` branch

@@ -52,6 +52,7 @@ async function load() {
     const r = await fetch("data/brief.json", { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
     brief = await r.json();
+    planCache.clear();
   } catch (e) {
     $("#fresh").textContent = "No data yet. Open once with signal to download the brief.";
     return;
@@ -68,7 +69,7 @@ async function load() {
 }
 
 function renderAll() {
-  renderFresh(); renderDays(); renderSummary(); renderChart(); renderSites(); renderWeather(); renderOutlook(); renderNWS(); renderLogSites(); renderLogs();
+  renderFresh(); renderDays(); renderSummary(); renderDayPlan(); renderChart(); renderSites(); renderWeather(); renderOutlook(); renderCalendar(); renderNWS(); renderLogSites(); renderLogs();
 }
 
 function renderFresh() {
@@ -336,6 +337,116 @@ function renderSites() {
   }).join("");
 }
 
+/* ---------------------------------------------------------------- 3-dive day plan + calendar (planner.js, data/plan.json) */
+const DEPART_KEY = "pdb.depart.v1";
+const SHORT = { "blue-corner": "Blue Corner", "siaes-corner": "Siaes", "ulong-channel": "Ulong", "german-channel": "German Ch." };
+const ABBR = { "blue-corner": "BC", "siaes-corner": "SC", "ulong-channel": "UL", "german-channel": "GC" };
+const shortName = (id) => SHORT[id] || brief.sites.find((s) => s.id === id)?.name || id;
+const planCache = new Map();
+function departTime() {
+  const cfg = brief.plan_config;
+  const v = store.get(DEPART_KEY, null);
+  return v && cfg.depart_options?.includes(v) ? v : cfg.depart;
+}
+function planFor(d) {
+  const cfg = brief.plan_config;
+  if (!cfg || !window.Planner || d.history) return null;
+  const key = d.date + departTime();
+  if (!planCache.has(key)) {
+    let r = null;
+    try { r = Planner.recommend(d, brief.sites, cfg, { depart: departTime(), zones: dayWeather(d) }); } catch (e) { console.log("planner", e); }
+    planCache.set(key, r);
+  }
+  return planCache.get(key);
+}
+const scoreClass = (v) => (v >= 8.5 ? "great" : v >= 7 ? "good" : v >= 5 ? "fair" : "poor");
+const planScore = (p) => p.score; // mean dive score; plans are ranked with small travel/wait penalties on top
+function diveWhy(x, meta) {
+  const parts = [];
+  if (x.change) parts.push(`${phaseText(meta, x.change.dir)} from ${x.change.time}`);
+  parts.push(...x.notes);
+  parts.push(x.run_min ? `${x.run_min} min run${x.wait_min ? ` + wait ${x.wait_min}` : ""}` : "");
+  return parts.filter(Boolean).join(" · ");
+}
+function renderDayPlan() {
+  const sec = $("#dayplan");
+  const d = brief.days[dayIdx];
+  const cfg = brief.plan_config;
+  const r = planFor(d);
+  sec.hidden = !cfg || d.history;
+  if (sec.hidden) return;
+  const dep = departTime();
+  const depBtns = (cfg.depart_options || [cfg.depart]).map((t) => `<button type="button" data-dep="${t}" aria-pressed="${t === dep}">${t}</button>`).join("");
+  if (!r) { sec.innerHTML = `<div class="card-head"><h2>Day plan</h2></div><p class="empty">No plan: tide data does not cover this day.</p>`; return; }
+  const b = r.best;
+  const rows = b.dives.map((x, i) => {
+    const meta = brief.sites.find((s) => s.id === x.site);
+    const dir = x.entryState.dir;
+    return `<li class="pl-row" data-entry="${x.entry}">
+      <span class="pl-n">${i + 1}</span>
+      <div class="pl-main">
+        <div class="pl-top"><b class="num">${x.entry}</b><span class="pl-site">${esc(shortName(x.site))}</span>
+          <span class="pill ${dir}">${phaseText(meta, dir, true)} · ${x.entryState.level}/5</span></div>
+        <div class="pl-why">${esc(diveWhy(x, meta))}</div>
+      </div>
+      <span class="pl-sc num ${scoreClass(x.score)}">${x.score.toFixed(1)}</span>
+    </li>`;
+  }).join("");
+  const lastLow = b.dives[b.dives.length - 1].score < 5;
+  const alt = r.alt ? `<p class="pl-alt"><span>Alt</span> ${r.alt.dives.map((x) => `${ABBR[x.site] || x.site} <b class="num">${x.entry}</b>`).join(" → ")} <span class="num">· ${planScore(r.alt).toFixed(1)}${r.alt.wait_min > b.wait_min ? ` · waits ${r.alt.wait_min} min` : ""}${r.alt.travel_min > b.travel_min + 10 ? ` · runs ${r.alt.travel_min} min` : ""}</span></p>` : "";
+  sec.innerHTML = `<div class="card-head"><h2>Day plan · ${b.dives.length} dives</h2>
+      <div class="dep"><span>Depart</span>${depBtns}</div></div>
+    <ol class="plan">${rows}</ol>
+    <div class="pl-sum"><span class="pl-total ${scoreClass(planScore(b))}"><b class="num">${planScore(b).toFixed(1)}</b>/10</span>
+      <span class="num">back ≈ ${b.back}</span><span class="num">runs ${b.travel_min} min</span></div>
+    ${lastLow ? `<p class="pl-hint">Dive ${b.dives.length} scores low on current: a wreck or lagoon reef may be the better third dive.</p>` : ""}
+    ${alt}
+    <p class="note">Tap a dive to see it in the site cards. Built from the predicted currents only (site lags not calibrated yet), ${cfg.dive_min} min dives, ${cfg.surface_min} min surface intervals, ${cfg.lunch_surface_min} min with lunch after dive ${cfg.lunch_after_dive}. Agree the plan with the captain.</p>`;
+  sec.querySelectorAll("[data-dep]").forEach((btn) => btn.addEventListener("click", () => {
+    store.set(DEPART_KEY, btn.dataset.dep); renderDayPlan(); renderCalendar();
+  }));
+  sec.querySelectorAll(".pl-row").forEach((li) => li.addEventListener("click", () => {
+    planK = Math.max(0, Math.min(72, (tToMin(li.dataset.entry) - 360) / 10));
+    $("#plan").value = planK; renderSites(); movePlanLine();
+    $("#planner").scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+}
+function calBars(d) {
+  // 08:00-16:00 per site, coloured by predicted phase (states are 10-min steps from 06:00)
+  const k0 = 12, k1 = 60;
+  return `<div class="cal-bars">${brief.sites.map((meta) => {
+    const sd = d.sites.find((x) => x.id === meta.id);
+    if (!sd) return "";
+    const cells = sd.states.slice(k0, k1).map((c) => `<i class="${c ? DIR[c[0]] : ""}"></i>`).join("");
+    return `<div class="cal-bar"><span>${ABBR[meta.id] || ""}</span><div>${cells}</div></div>`;
+  }).join("")}<div class="cal-bar cal-axis"><span></span><div>${[8, 10, 12, 14, 16].map((h) => `<em style="left:${((h - 8) / 8) * 100}%">${h}</em>`).join("")}</div></div></div>`;
+}
+function renderCalendar() {
+  const sec = $("#calendar");
+  sec.hidden = !brief.plan_config;
+  const det = $("#calDetails");
+  if (sec.hidden || !det.open) return;
+  const today = palauNow().date;
+  const days = brief.days.filter((d) => !d.history && d.date >= today);
+  const dayName = (iso) => new Date(iso + "T12:00:00+09:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Pacific/Palau" });
+  $("#calBody").innerHTML = `<p class="note">Depart ${departTime()}. Tides for every day; waves only count in the first week (forecast range).</p>` + days.map((d) => {
+    const r = planFor(d);
+    const i = brief.days.indexOf(d);
+    if (!r) return "";
+    const v = planScore(r.best);
+    const cls = scoreClass(v);
+    return `<button type="button" class="cal-row" data-i="${i}" aria-pressed="${i === dayIdx}">
+      <div class="cal-top"><b>${esc(dayName(d.date))}</b>${moonIcon(d.moon.age_days)}<span class="od-tag">${esc(d.tide_strength.label)}</span>
+        <span class="cal-s ${cls} num">${cls === "great" ? "★ " : ""}${v.toFixed(1)}</span></div>
+      <div class="cal-p">${r.best.dives.map((x) => `${ABBR[x.site] || x.site} <b class="num">${x.entry}</b>`).join(" → ")}</div>
+      ${calBars(d)}
+    </button>`;
+  }).join("");
+  $("#calBody").querySelectorAll(".cal-row").forEach((b) => b.addEventListener("click", () => {
+    dayIdx = +b.dataset.i; renderAll(); scrollTo({ top: 0, behavior: "smooth" });
+  }));
+}
+
 /* ---------------------------------------------------------------- weather */
 function renderWeather() {
   const d = brief.days[dayIdx];
@@ -587,6 +698,7 @@ function initLogForm() {
 
 /* ---------------------------------------------------------------- boot */
 $("#outlookDetails").addEventListener("toggle", () => { if (brief) renderOutlook(); });
+$("#calDetails").addEventListener("toggle", () => { if (brief) renderCalendar(); });
 $("#plan").addEventListener("input", (e) => { planK = +e.target.value; if (brief) { renderSites(); movePlanLine(); } });
 function net() { $("#net").hidden = navigator.onLine; }
 addEventListener("online", () => { net(); load(); });
