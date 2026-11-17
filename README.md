@@ -35,3 +35,5 @@ Log dives in the app → **Copy** → paste into the chat. Claude updates `lag_m
 - `scripts/tides.py` – tide/current logic
 - `scripts/build.py` – fetch + build (`--fixtures tests/fixtures` for offline test)
 - `docs/` – the web app (index.html, app.js, style.css, sw.js)
+- `notes/` – project log (工作历程), status, roadmap and other overview docs (mirrors of the claude.ai project docs); start at `notes/README.md`
+- `analysis/<project>/` – detailed write-up of each analysis project; `scripts/analysis_*` – its code; results on the `analysis-data` branch
