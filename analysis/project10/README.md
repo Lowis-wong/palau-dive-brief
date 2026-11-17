@@ -82,7 +82,7 @@
 
 ### 1.5 QGIS 工程
 
-`~/Backup/Palau_QGIS/Palau_Bathymetry_P10.qgz`，数据在 `~/Backup/Palau_QGIS/project10/`。图层和样式见第 6 节。
+`~/Backup/Palau_QGIS/Palau_Bathymetry_P10.qgz`，数据在 `~/Backup/Palau_QGIS/project10/`。由 `qgis_build_project.py` 生成，图层和样式见第 6 节。
 
 ---
 
@@ -104,7 +104,9 @@
 | 11-17 08:32 | `4c48810` | 43980203999 | v3：剔除假浅底（深 < 3 m 且绿光 < 0.05） | 0–15 m 偏差 +0.24，均方根 0.95；**关卡 2 通过** |
 | 11-17 08:46 | `a65ca80` | 43982177774 | 写 v3 结果文档。因为同时提交了 `model_compare.py`（在 `scripts/` 下），工作流又跑了一次 `sdb`，参数和 v3 相同 | 结果与 v3 一致；**`analysis-data` 上的 `sdb/` 文件来自这次运行** |
 | 11-17 17:46 | — | — | Lowis 用 Esri Wayback 高清图检查，认为没有问题 | 发现蓝角礁墙外有 15–20 m 杂点带 |
-| 11-17 17:49 | `dc31d65` | 44050058806 | 阶段 E 后处理 `derive.py` | 见第 4.5 节 |
+| 11-17 17:49 | `dc31d65` | 44050058806 | 阶段 E 后处理 `derive.py` | 成功；质量好 129 万像素、一般 82 万，去掉孤立小块 2,638 像素，等深线 5,236 条 |
+| 11-17 18:0x | `68b554f`、`5490797` | — | 详细记录（本文件）、`docs/` 整理、`notes/` 镜像全项目文档 | — |
+| 11-17 18:1x | — | — | 建 QGIS 工程时一次性下载卡住 QGIS，MCP 断开；改写成 `qgis_build_project.py`（后台下载） | 等重新连接后执行 |
 
 ---
 
@@ -217,7 +219,17 @@
 ---
 
 ## 6. QGIS 工程
-见第 1.5 节。图层组和样式在建好后补充到这里。
+- 建工程的脚本：`analysis/project10/qgis_build_project.py`（在 QGIS 里运行）。分两步，避免一次调用卡住 QGIS：`start_download()` 在后台下载数据到 `~/Backup/Palau_QGIS/project10/`，`download_status()` 查进度，`build_project()` 建图层、设样式并保存。
+- 11-17 第一次尝试时，在 QGIS 主线程里一次性下载约 45 MB，QGIS 无响应、MCP 连接断开；因此改成后台下载。
+- 图层组（图例从上到下）：
+  - 浮球候选：试跑的停泊船热点（蓝角、德国），橙色星形，标注出现天数
+  - 参考：四个潜点
+  - 水深：等深线（5/10/15 m 粗线并标注）、"一般"质量区（白色半透明）、山体阴影（正片叠底）、水深色带（0–18 m+）
+  - 检查：不确定度、原始中位数、"看不到底"比例、四分位距、景数（默认隐藏）
+  - ICESat-2：ATL24 格子，按深度分级（默认隐藏）
+  - Sentinel-2：去耀斑真彩色（默认隐藏）
+  - 底图：Esri World Imagery、OpenStreetMap
+- 坐标系 EPSG:32653。
 
 ---
 
