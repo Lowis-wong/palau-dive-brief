@@ -1,0 +1,133 @@
+{
+ "started": "2026-11-16T14:07:01+00:00",
+ "errors": {},
+ "mllw_station_datum_m": 0.832,
+ "atl24_granules": {
+  "granules": 44,
+  "ok": 32,
+  "empty": 12,
+  "failed": []
+ },
+ "atl24": {
+  "n_rows": 709585,
+  "mllw_station_datum_m": 0.832,
+  "level_src": {
+   "obs": 709585
+  },
+  "time_range": [
+   "2018-11-23 16:42:51.851330048",
+   "2026-03-17 21:05:09.419395840"
+  ],
+  "conf>=0.0": {
+   "n": 534136,
+   "passes": 32,
+   "beams": 103,
+   "depth_bands": {
+    "0.5-2": 340160,
+    "2-5": 128339,
+    "5-10": 43922,
+    "10-15": 15026,
+    "15-20": 5263,
+    "20-25": 1426
+   },
+   "night_n": 289933,
+   "max_depth": 25.0,
+   "sites_within_1500m": {
+    "blue-corner": 4501,
+    "siaes-corner": 10100,
+    "ulong-channel": 18494,
+    "german-channel": 15528
+   }
+  },
+  "conf>=0.5": {
+   "n": 526585,
+   "passes": 32,
+   "beams": 102,
+   "depth_bands": {
+    "0.5-2": 333077,
+    "2-5": 128015,
+    "5-10": 43832,
+    "10-15": 14988,
+    "15-20": 5247,
+    "20-25": 1426
+   },
+   "night_n": 289384,
+   "max_depth": 25.0,
+   "sites_within_1500m": {
+    "blue-corner": 4497,
+    "siaes-corner": 10093,
+    "ulong-channel": 18480,
+    "german-channel": 14334
+   }
+  },
+  "conf>=0.6": {
+   "n": 507785,
+   "passes": 31,
+   "beams": 101,
+   "depth_bands": {
+    "0.5-2": 319363,
+    "2-5": 125796,
+    "5-10": 42140,
+    "10-15": 14158,
+    "15-20": 4996,
+    "20-25": 1332
+   },
+   "night_n": 283900,
+   "max_depth": 25.0,
+   "sites_within_1500m": {
+    "blue-corner": 4470,
+    "siaes-corner": 10018,
+    "ulong-channel": 18288,
+    "german-channel": 12273
+   }
+  },
+  "conf>=0.7": {
+   "n": 483482,
+   "passes": 31,
+   "beams": 100,
+   "depth_bands": {
+    "0.5-2": 301170,
+    "2-5": 123223,
+    "5-10": 39936,
+    "10-15": 13222,
+    "15-20": 4718,
+    "20-25": 1213
+   },
+   "night_n": 275409,
+   "max_depth": 24.99,
+   "sites_within_1500m": {
+    "blue-corner": 4438,
+    "siaes-corner": 9922,
+    "ulong-channel": 18041,
+    "german-channel": 9898
+   }
+  },
+  "conf>=0.8": {
+   "n": 448344,
+   "passes": 29,
+   "beams": 97,
+   "depth_bands": {
+    "0.5-2": 274665,
+    "2-5": 119617,
+    "5-10": 36818,
+    "10-15": 11885,
+    "15-20": 4320,
+    "20-25": 1039
+   },
+   "night_n": 262035,
+   "max_depth": 24.99,
+   "sites_within_1500m": {
+    "blue-corner": 4383,
+    "siaes-corner": 9801,
+    "ulong-channel": 17620,
+    "german-channel": 7913
+   }
+  },
+  "gate1": {
+   "n": 507785,
+   "passes": 31,
+   "bands_2_18_each_ge30": true,
+   "pass": true
+  }
+ }
+}

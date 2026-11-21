@@ -1,0 +1,136 @@
+{
+ "started": "2026-11-16T13:53:09+00:00",
+ "errors": {
+  "atl24": "Traceback (most recent call last):\n  File \"/home/runner/work/palau-dive-brief/palau-dive-brief/scripts/analysis_p10/pilot.py\", line 319, in main\n    fn()\n  File \"/home/runner/work/palau-dive-brief/palau-dive-brief/scripts/analysis_p10/pilot.py\", line 317, in <lambda>\n    for name, fn in ((\"atl24\", lambda: part_a(out, wl, models, mllw)), (\"boats\", lambda: part_b(out))):\n                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/palau-dive-brief/palau-dive-brief/scripts/analysis_p10/pilot.py\", line 75, in part_a\n    log(\"ATL24: rows\", len(gdf), \"columns\", list(gdf.columns))\n                       ^^^^^^^^\nTypeError: object of type 'NoneType' has no len()\n"
+ },
+ "mllw_station_datum_m": 0.832,
+ "boats": {
+  "blue-corner": {
+   "clear_scenes": 194,
+   "detections": 5730,
+   "hotspots": 95,
+   "top": [
+    {
+     "lat": 7.13363830775439,
+     "lon": 134.22292331870045,
+     "n_scenes": 52,
+     "frac_of_clear": 0.268,
+     "spread_m": 16.0
+    },
+    {
+     "lat": 7.136558347785489,
+     "lon": 134.22166143965913,
+     "n_scenes": 47,
+     "frac_of_clear": 0.242,
+     "spread_m": 16.7
+    },
+    {
+     "lat": 7.133786851664436,
+     "lon": 134.22185413768804,
+     "n_scenes": 46,
+     "frac_of_clear": 0.237,
+     "spread_m": 15.1
+    },
+    {
+     "lat": 7.138014058582444,
+     "lon": 134.22174926945374,
+     "n_scenes": 39,
+     "frac_of_clear": 0.201,
+     "spread_m": 14.8
+    },
+    {
+     "lat": 7.135776531694275,
+     "lon": 134.22106326685528,
+     "n_scenes": 33,
+     "frac_of_clear": 0.17,
+     "spread_m": 16.1
+    },
+    {
+     "lat": 7.138224732055639,
+     "lon": 134.2229896913855,
+     "n_scenes": 32,
+     "frac_of_clear": 0.165,
+     "spread_m": 20.6
+    },
+    {
+     "lat": 7.137470474372942,
+     "lon": 134.22203775822322,
+     "n_scenes": 32,
+     "frac_of_clear": 0.165,
+     "spread_m": 15.0
+    },
+    {
+     "lat": 7.135511232950773,
+     "lon": 134.2222931142658,
+     "n_scenes": 32,
+     "frac_of_clear": 0.165,
+     "spread_m": 19.6
+    }
+   ]
+  },
+  "german-channel": {
+   "clear_scenes": 161,
+   "detections": 4981,
+   "hotspots": 175,
+   "top": [
+    {
+     "lat": 7.120166740196123,
+     "lon": 134.2695099982793,
+     "n_scenes": 39,
+     "frac_of_clear": 0.242,
+     "spread_m": 18.0
+    },
+    {
+     "lat": 7.117860203119885,
+     "lon": 134.2723321923218,
+     "n_scenes": 34,
+     "frac_of_clear": 0.211,
+     "spread_m": 7.5
+    },
+    {
+     "lat": 7.1196115946561545,
+     "lon": 134.26892426585835,
+     "n_scenes": 28,
+     "frac_of_clear": 0.174,
+     "spread_m": 17.3
+    },
+    {
+     "lat": 7.116191013110426,
+     "lon": 134.27278406346602,
+     "n_scenes": 22,
+     "frac_of_clear": 0.137,
+     "spread_m": 6.3
+    },
+    {
+     "lat": 7.126244985595426,
+     "lon": 134.2823386739703,
+     "n_scenes": 18,
+     "frac_of_clear": 0.112,
+     "spread_m": 10.2
+    },
+    {
+     "lat": 7.126939131107014,
+     "lon": 134.28242982026902,
+     "n_scenes": 15,
+     "frac_of_clear": 0.093,
+     "spread_m": 11.8
+    },
+    {
+     "lat": 7.10950369908504,
+     "lon": 134.27611431825,
+     "n_scenes": 15,
+     "frac_of_clear": 0.093,
+     "spread_m": 7.9
+    },
+    {
+     "lat": 7.1101746310395555,
+     "lon": 134.27613222499266,
+     "n_scenes": 15,
+     "frac_of_clear": 0.093,
+     "spread_m": 13.4
+    }
+   ]
+  }
+ },
+ "finished": "2026-11-16T14:04:45+00:00"
+}

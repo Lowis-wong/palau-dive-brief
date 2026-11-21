@@ -1,0 +1,69 @@
+12:03:29 search 2017-01-01 22 kept 21
+12:03:30 search 2017-07-01 51 kept 51
+12:03:31 search 2018-01-01 83 kept 78
+12:03:32 search 2018-07-01 77 kept 60
+12:03:34 search 2019-01-01 111 kept 94
+12:03:35 search 2019-07-01 144 kept 118
+12:03:36 search 2020-01-01 144 kept 113
+12:03:38 search 2020-07-01 148 kept 91
+12:03:39 search 2021-01-01 155 kept 111
+12:03:41 search 2021-07-01 149 kept 108
+12:03:41 search 2022-01-01 71 kept 44
+12:03:42 search 2022-07-01 74 kept 50
+12:03:43 search 2023-01-01 72 kept 52
+12:03:44 search 2023-07-01 75 kept 45
+12:03:45 search 2024-01-01 70 kept 55
+12:03:46 search 2024-07-01 76 kept 50
+12:03:47 search 2025-01-01 70 kept 50
+12:03:48 search 2025-07-01 68 kept 50
+12:03:48 search 2026-01-01 72 kept 49
+12:03:49 search 2026-07-01 56 kept 38
+12:03:49 items found 1328
+12:03:49 after dedupe 988
+12:04:13 SCL scanned; errors 2
+12:04:17 scenes tables 988
+12:04:17 [ulong] composite from 180 scenes
+12:04:58 [ulong] stacked 180
+12:05:49 [german] composite from 115 scenes
+12:06:18 [german] stacked 115
+12:07:04 [ulong] pilot flood_20251229_-188
+12:07:07 [ulong] pilot flood_20250108_-165
+12:07:10 [ulong] pilot flood_20231220_-162
+12:07:13 [ulong] pilot flood_20171211_-194
+12:07:16 [ulong] pilot flood_20190115_-165
+12:07:19 [ulong] pilot flood_20200120_-269
+12:07:22 [ulong] pilot flood_20191121_-246
+12:07:25 [ulong] pilot flood_20230514_-238
+12:07:29 [ulong] pilot flood_20190709_-079
+12:07:32 [ulong] pilot flood_20201110_-282
+12:07:34 [ulong] pilot ebb_20201230_+173
+12:07:38 [ulong] pilot ebb_20201130_+199
+12:07:41 [ulong] pilot ebb_20260602_+194
+12:07:44 [ulong] pilot ebb_20190306_+189
+12:07:47 [ulong] pilot ebb_20211120_+169
+12:07:50 [ulong] pilot ebb_20230817_+192
+12:07:53 [ulong] pilot ebb_20260503_+197
+12:07:56 [ulong] pilot ebb_20231225_+257
+12:07:59 [ulong] pilot ebb_20181206_+240
+12:08:02 [ulong] pilot ebb_20170224_+260
+12:08:06 [german] pilot flood_20190115_-165
+12:08:09 [german] pilot flood_20181201_-224
+12:08:12 [german] pilot flood_20171111_-167
+12:08:15 [german] pilot flood_20221130_-138
+12:08:18 [german] pilot flood_20200120_-269
+12:08:22 [german] pilot flood_20230514_-238
+12:08:24 [german] pilot flood_20190709_-079
+12:08:28 [german] pilot flood_20201220_-067
+12:08:31 [german] pilot flood_20261104_-310
+12:08:35 [german] pilot flood_20180425_-297
+12:08:38 [german] pilot ebb_20201130_+199
+12:08:41 [german] pilot ebb_20201230_+173
+12:08:44 [german] pilot ebb_20260602_+194
+12:08:47 [german] pilot ebb_20240124_+215
+12:08:50 [german] pilot ebb_20190306_+195
+12:08:53 [german] pilot ebb_20230817_+192
+12:08:56 [german] pilot ebb_20260503_+197
+12:08:59 [german] pilot ebb_20180629_+208
+12:09:02 [german] pilot ebb_20181206_+240
+12:09:05 [german] pilot ebb_20170224_+260
+12:09:05 done {"run_utc": "2026-11-16T12:03:28+00:00", "items_found": 1328, "tiles": {"53NMJ": 668, "53NMH": 660}, "items_dedup": 988, "scl_errors": 2, "ulong_clear_scenes": 180, "ulong_clear_mid": 105, "ulong_clear_hw90": 46, "ulong_composite": {"n_stack": 180, "n_flood": 16, "n_ebb": 42, "range_flood": 0.95, "range_ebb": 1.23, "min_from_hw_flood": -217, "min_from_hw_ebb": 198}, "german_clear_scenes": 115, "german_clear_mid": 67, "german_clear_hw90": 32, "german_composite": {"n_stack": 115, "n_flood": 11, "n_ebb": 24, "range_flood": 0.92, "range_ebb": 1.26, "min_from_hw_flood": -183, "min_from_hw_ebb": 185}, "pilots": 40}

@@ -1,0 +1,35 @@
+{
+  "run_utc": "2026-11-16T12:03:28+00:00",
+  "items_found": 1328,
+  "tiles": {
+    "53NMJ": 668,
+    "53NMH": 660
+  },
+  "items_dedup": 988,
+  "scl_errors": 2,
+  "ulong_clear_scenes": 180,
+  "ulong_clear_mid": 105,
+  "ulong_clear_hw90": 46,
+  "ulong_composite": {
+    "n_stack": 180,
+    "n_flood": 16,
+    "n_ebb": 42,
+    "range_flood": 0.95,
+    "range_ebb": 1.23,
+    "min_from_hw_flood": -217,
+    "min_from_hw_ebb": 198
+  },
+  "german_clear_scenes": 115,
+  "german_clear_mid": 67,
+  "german_clear_hw90": 32,
+  "german_composite": {
+    "n_stack": 115,
+    "n_flood": 11,
+    "n_ebb": 24,
+    "range_flood": 0.92,
+    "range_ebb": 1.26,
+    "min_from_hw_flood": -183,
+    "min_from_hw_ebb": 185
+  },
+  "pilots": 40
+}

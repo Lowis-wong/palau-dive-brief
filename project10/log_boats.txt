@@ -1,0 +1,36 @@
+10:59:17 search 2017-01-01 22 kept 21
+10:59:17 search 2017-07-01 51 kept 51
+10:59:18 search 2018-01-01 83 kept 78
+10:59:18 search 2018-07-01 77 kept 60
+10:59:19 search 2019-01-01 111 kept 94
+10:59:20 search 2019-07-01 144 kept 118
+10:59:21 search 2020-01-01 144 kept 113
+10:59:22 search 2020-07-01 148 kept 91
+10:59:23 search 2021-01-01 155 kept 111
+10:59:24 search 2021-07-01 149 kept 108
+10:59:24 search 2022-01-01 71 kept 44
+10:59:25 search 2022-07-01 74 kept 50
+10:59:25 search 2023-01-01 72 kept 52
+10:59:26 search 2023-07-01 75 kept 45
+10:59:27 search 2024-01-01 70 kept 55
+10:59:27 search 2024-07-01 76 kept 50
+10:59:28 search 2025-01-01 70 kept 50
+10:59:28 search 2025-07-01 68 kept 50
+10:59:29 search 2026-01-01 72 kept 49
+10:59:29 search 2026-07-01 56 kept 38
+10:59:29 dates 547
+10:59:33 scanned 0
+11:00:02 scanned 50
+11:00:27 scanned 100
+11:00:53 scanned 150
+11:01:16 scanned 200
+11:01:39 scanned 250
+11:02:01 scanned 300
+11:02:25 scanned 350
+11:02:49 scanned 400
+11:03:12 scanned 450
+11:03:38 scanned 500
+11:04:00 blue-corner {'clear_days': 177, 'busy_days_skipped': 17, 'detections': 2856, 'kept_detections': 1013, 'candidates': 13, 'by_class': {'A': 6, 'C': 4, 'B': 3}}
+11:04:01 siaes-corner {'clear_days': 204, 'busy_days_skipped': 9, 'detections': 1858, 'kept_detections': 819, 'candidates': 9, 'by_class': {'C': 6, 'A': 2, 'B': 1}}
+11:04:04 ulong-channel {'clear_days': 215, 'busy_days_skipped': 2, 'detections': 2200, 'kept_detections': 1429, 'candidates': 23, 'by_class': {'C': 17, 'A': 4, 'B': 2}}
+11:04:05 german-channel {'clear_days': 127, 'busy_days_skipped': 33, 'detections': 1860, 'kept_detections': 330, 'candidates': 7, 'by_class': {'C': 3, 'A': 2, 'B': 2}}
