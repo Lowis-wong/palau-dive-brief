@@ -56,5 +56,24 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
-      - id: deploy
+      # GitHub's artifact API sometimes can't see the just-uploaded artifact yet
+      # ("No artifacts named github-pages were found", 2026-11-24, 4 runs). Retry after a pause.
+      - id: deploy_try1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before retrying deploy
+        if: steps.deploy_try1.outcome == 'failure'
+        run: sleep 45
+      - id: deploy_try2
+        if: steps.deploy_try1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Wait before last deploy attempt
+        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
+        run: sleep 120
+      - id: deploy_try3
+        if: steps.deploy_try1.outcome == 'failure' && steps.deploy_try2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+      - id: deploy
+        name: Page URL
+        run: echo "page_url=${{ steps.deploy_try1.outputs.page_url || steps.deploy_try2.outputs.page_url || steps.deploy_try3.outputs.page_url }}" >> "$GITHUB_OUTPUT"
