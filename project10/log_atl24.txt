@@ -1,0 +1,19 @@
+14:07:03 ATL24: granules 44
+(dataframe.lua:210) <AppServer.14477> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14313> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14486> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14410> produced an empty dataframe
+Alert <-1>: Failed to send data in ATL24_20220325182916_00411501_007_01_003_01.h5: invalid dataframe
+Alert <-1>: Failed to send data in ATL24_20220325182916_00411501_007_01_003_01.h5: invalid dataframe
+Alert <-1>: Failed to send data in ATL24_20220325182916_00411501_007_01_003_01.h5: invalid dataframe
+(dataframe.lua:210) <AppServer.14558> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14570> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14483> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14645> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14633> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14670> produced an empty dataframe
+(dataframe.lua:210) <AppServer.14876> produced an empty dataframe
+(dataframe.lua:210) <AppServer.15024> produced an empty dataframe
+14:11:05 ATL24: granule stats {'granules': 44, 'ok': 32, 'empty': 12, 'failed': 0}
+14:11:05 ATL24: rows 709585 columns ['night_flag', 'region', 'class_ph', 'gt', 'sigma_tvu', 'surface_h', 'sigma_thu', 'rgt', 'ortho_h', 'confidence', 'spot', 'x_atc', 'y_atc', 'srcid', 'kd', 'cycle', 'surface_roughness', 'ellipse_h', 'quality_ph', 'geometry', 'granule']
+14:11:21 ATL24 gate1 {'n': 507785, 'passes': 31, 'bands_2_18_each_ge30': True, 'pass': True}

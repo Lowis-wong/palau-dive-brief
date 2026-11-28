@@ -1,0 +1,2 @@
+08:50:16 inputs read (2550, 1230)
+08:50:19 products {'good': 1290872, 'fair': 820936, 'dropped_small_patches': 2638, 'km2_total': 211.18} contours 5236

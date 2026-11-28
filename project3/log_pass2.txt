@@ -1,0 +1,24 @@
+12:20:59 search 2017-01-01 22 kept 21
+12:21:00 search 2017-07-01 51 kept 51
+12:21:01 search 2018-01-01 83 kept 78
+12:21:02 search 2018-07-01 77 kept 60
+12:21:03 search 2019-01-01 111 kept 94
+12:21:04 search 2019-07-01 144 kept 118
+12:21:05 search 2020-01-01 144 kept 113
+12:21:06 search 2020-07-01 148 kept 91
+12:21:07 search 2021-01-01 155 kept 111
+12:21:09 search 2021-07-01 149 kept 108
+12:21:09 search 2022-01-01 71 kept 44
+12:21:10 search 2022-07-01 74 kept 50
+12:21:11 search 2023-01-01 72 kept 52
+12:21:11 search 2023-07-01 75 kept 45
+12:21:12 search 2024-01-01 70 kept 55
+12:21:13 search 2024-07-01 76 kept 50
+12:21:14 search 2025-01-01 70 kept 50
+12:21:14 search 2025-07-01 68 kept 50
+12:21:15 search 2026-01-01 72 kept 49
+12:21:16 search 2026-07-01 56 kept 38
+12:21:16 items 988
+12:21:16 [ulong] boxes ['IN', 'OUT1', 'OUT2', 'CTRL']; scenes 276
+12:21:19 [ulong] 0/276
+12:21:41 [ulong] 100/276
